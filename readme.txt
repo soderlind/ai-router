@@ -1,0 +1,75 @@
+=== AI Router ===
+Contributors: developer
+Tags: ai, openai, azure, routing
+Requires at least: 7.0
+Tested up to: 7.0
+Requires PHP: 8.3
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Route AI requests to different provider configurations based on capability.
+
+== Description ==
+
+AI Router allows you to configure multiple instances of the same AI provider (e.g., multiple Azure OpenAI deployments) and route AI requests to the appropriate configuration based on the requested capability.
+
+**Why use AI Router?**
+
+WordPress 7.0 introduces native AI capabilities, but only allows one configuration per provider type. With AI Router, you can:
+
+* Configure multiple deployments of the same provider (e.g., GPT-4o for text, DALL-E for images)
+* Route each capability (text generation, image generation, embeddings, etc.) to a specific configuration
+* Set a default fallback configuration
+* Easily manage all your AI configurations from one place
+
+**Supported Providers**
+
+* OpenAI
+* Azure OpenAI
+
+**Supported Capabilities**
+
+* Text Generation (GPT models)
+* Chat History (conversation context)
+* Image Generation (DALL-E models)
+* Embedding Generation
+* Text-to-Speech
+* Speech Generation
+* Music Generation
+* Video Generation
+
+== Installation ==
+
+1. Upload the `ai-router` folder to `/wp-content/plugins/`
+2. Activate the plugin through the 'Plugins' menu in WordPress
+3. Go to Settings → AI Router to configure your providers
+4. Build the admin assets: `cd wp-content/plugins/ai-router && npm install && npm run build`
+
+== Frequently Asked Questions ==
+
+= Do I need to have the underlying provider plugins installed? =
+
+Yes, the underlying provider plugins (e.g., ai-provider-for-openai, ai-provider-for-azure-openai) must be installed and activated for AI Router to route requests to them.
+
+= Can I have different models for different capabilities? =
+
+Yes! That's the main purpose of AI Router. Create separate configurations for each model/deployment, assign the appropriate capabilities to each, and then map capabilities to configurations.
+
+= What happens if a capability isn't mapped? =
+
+If a capability isn't explicitly mapped, AI Router will use the default configuration (if set and it supports that capability). If no default is available, it will try to find any configuration that supports the capability.
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release
+* Support for OpenAI and Azure OpenAI providers
+* Admin UI for managing configurations
+* Capability-to-configuration mapping
+* Default configuration fallback
+
+== Upgrade Notice ==
+
+= 1.0.0 =
+Initial release.

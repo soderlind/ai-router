@@ -1,0 +1,34 @@
+{
+	"name": "ai-router",
+	"version": "1.0.0",
+	"description": "AI Router WordPress plugin",
+	"private": true,
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"check-engines": "wp-scripts check-engines",
+		"check-licenses": "wp-scripts check-licenses",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"lint:pkg-json": "wp-scripts lint-pkg-json",
+		"packages-update": "wp-scripts packages-update",
+		"test:js": "vitest run",
+		"test:js:watch": "vitest",
+		"test:js:coverage": "vitest run --coverage"
+	},
+	"devDependencies": {
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.0.0",
+		"@vitejs/plugin-react": "^4.3.0",
+		"@wordpress/scripts": "^30.0.0",
+		"jsdom": "^25.0.0",
+		"vitest": "^3.0.0"
+	},
+	"dependencies": {
+		"@wordpress/api-fetch": "^7.0.0",
+		"@wordpress/components": "^28.0.0",
+		"@wordpress/element": "^6.0.0",
+		"@wordpress/i18n": "^5.0.0"
+	}
+}
