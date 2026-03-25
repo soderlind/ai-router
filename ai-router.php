@@ -25,7 +25,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Plugin constants.
 define( 'AI_ROUTER_VERSION', '1.0.0' );
 define( 'AI_ROUTER_FILE', __FILE__ );
-define( 'AI_ROUTER_DIR', plugin_dir_path( __FILE__ ) );
+define( 'AI_ROUTER_PATH', plugin_dir_path( __FILE__ ) );
+define( 'AI_ROUTER_DIR', AI_ROUTER_PATH ); // Alias for backward compat.
 define( 'AI_ROUTER_URL', plugin_dir_url( __FILE__ ) );
 
 // Autoloader.
@@ -60,6 +61,10 @@ function bootstrap(): void {
 	if ( is_admin() ) {
 		$settings_page = new Admin\SettingsPage( $repository, $capability_map );
 		$settings_page->register();
+
+		// Integrate with WP 7 Connectors page.
+		$connectors = new Admin\ConnectorsIntegration();
+		$connectors->init();
 	}
 
 	// Register REST API.
