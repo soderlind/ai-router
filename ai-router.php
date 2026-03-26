@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'AI_ROUTER_VERSION', '1.0.0' );
+define( 'AI_ROUTER_VERSION', '0.1.0' );
 define( 'AI_ROUTER_FILE', __FILE__ );
 define( 'AI_ROUTER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AI_ROUTER_DIR', AI_ROUTER_PATH ); // Alias for backward compat.
@@ -31,6 +31,19 @@ define( 'AI_ROUTER_URL', plugin_dir_url( __FILE__ ) );
 
 // Autoloader.
 require_once AI_ROUTER_DIR . 'src/autoload.php';
+
+// GitHub plugin updater.
+if ( ! class_exists( \Soderlind\WordPress\GitHubUpdater::class ) ) {
+	require_once AI_ROUTER_DIR . 'src/class-github-plugin-updater.php';
+}
+
+\Soderlind\WordPress\GitHubUpdater::init(
+	github_url: 'https://github.com/soderlind/ai-router',
+	plugin_file: __FILE__,
+	plugin_slug: 'ai-router',
+	name_regex: '/ai-router\.zip/',
+	branch: 'main',
+);
 
 /**
  * Bootstrap the plugin.
