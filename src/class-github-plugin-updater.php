@@ -5,7 +5,7 @@
  * @package AIRouter
  */
 
-namespace Soderlind\WordPress;
+namespace AIRouter\Updater;
 
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 

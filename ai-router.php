@@ -33,11 +33,9 @@ define( 'AI_ROUTER_URL', plugin_dir_url( __FILE__ ) );
 require_once AI_ROUTER_DIR . 'src/autoload.php';
 
 // GitHub plugin updater.
-if ( ! class_exists( \Soderlind\WordPress\GitHubUpdater::class ) ) {
-	require_once AI_ROUTER_DIR . 'src/class-github-plugin-updater.php';
-}
+require_once AI_ROUTER_DIR . 'src/class-github-plugin-updater.php';
 
-\Soderlind\WordPress\GitHubUpdater::init(
+\AIRouter\Updater\GitHubUpdater::init(
 	github_url: 'https://github.com/soderlind/ai-router',
 	plugin_file: __FILE__,
 	plugin_slug: 'ai-router',
