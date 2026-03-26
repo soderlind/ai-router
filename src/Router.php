@@ -57,7 +57,7 @@ final class Router {
 		add_action( 'init', [ $this, 'register_configured_providers' ], 5 );
 
 		// Hook before AI generation to inject routing.
-		add_action( 'wp_ai_client_before_generate_result', [ $this, 'before_generate' ], 5, 2 );
+		add_action( 'wp_ai_client_before_generate_result', [ $this, 'before_generate' ], 5 );
 
 		// Set up authentication for configured providers on init.
 		add_action( 'init', [ $this, 'setup_provider_authentication' ], 25 );
@@ -144,11 +144,28 @@ final class Router {
 	/**
 	 * Hook called before AI generation.
 	 *
-	 * @param object $prompt_builder The prompt builder instance.
-	 * @param string $capability     The capability being used.
+	 * Receives a BeforeGenerateResultEvent from the AI Client SDK.
+	 * At this point the model is already selected, so we just track
+	 * the capability for potential use in other hooks.
+	 *
+	 * @param object $event The BeforeGenerateResultEvent instance.
 	 * @return void
 	 */
-	public function before_generate( object $prompt_builder, string $capability ): void {
+	public function before_generate( object $event ): void {
+		// Extract capability from the event.
+		$capability = null;
+		if ( is_callable( [ $event, 'getCapability' ] ) ) {
+			$cap_enum = $event->getCapability();
+			if ( null !== $cap_enum ) {
+				// CapabilityEnum has a ->value property with the string slug.
+				$capability = $cap_enum->value ?? (string) $cap_enum;
+			}
+		}
+
+		if ( null === $capability ) {
+			return;
+		}
+
 		$this->current_capability = $capability;
 
 		$config = $this->get_configuration_for_capability( $capability );
@@ -157,21 +174,14 @@ final class Router {
 			return;
 		}
 
-		// Apply provider/model preference based on configuration.
-		$provider_id = $this->get_provider_id_for_config( $config );
-
-		if ( $provider_id && method_exists( $prompt_builder, 'usingProvider' ) ) {
-			$prompt_builder->usingProvider( $provider_id );
-		}
-
 		/**
-		 * Fires when AI Router routes a request.
+		 * Fires when AI Router processes a request.
 		 *
-		 * @param Configuration $config         The configuration used.
-		 * @param string        $capability     The capability being used.
-		 * @param object        $prompt_builder The prompt builder instance.
+		 * @param Configuration $config     The configuration matched.
+		 * @param string        $capability The capability being used.
+		 * @param object        $event      The BeforeGenerateResultEvent.
 		 */
-		do_action( 'ai_router_routed', $config, $capability, $prompt_builder );
+		do_action( 'ai_router_routed', $config, $capability, $event );
 	}
 
 	/**

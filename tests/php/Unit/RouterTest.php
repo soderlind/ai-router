@@ -263,38 +263,52 @@ class RouterTest extends TestCase {
 			]
 		);
 
-		$prompt_builder = new \stdClass();
+		// Mock the event object with getCapability() method.
+		$cap_enum        = new \stdClass();
+		$cap_enum->value = 'text_generation';
+
+		$event = Mockery::mock( 'BeforeGenerateResultEvent' );
+		$event->shouldReceive( 'getCapability' )->andReturn( $cap_enum );
 
 		Filters\expectApplied( 'ai_router_get_configuration' )
 			->once()
+			->with( null, 'text_generation' )
 			->andReturn( null );
 
 		$this->capability_map
 			->shouldReceive( 'get_config_for_capability' )
 			->once()
+			->with( 'text_generation' )
 			->andReturn( $config );
 
 		Actions\expectDone( 'ai_router_routed' )
 			->once()
-			->with( $config, 'text_generation', $prompt_builder );
+			->with( $config, 'text_generation', $event );
 
 		$router = new Router( $this->repository, $this->capability_map );
-		$router->before_generate( $prompt_builder, 'text_generation' );
+		$router->before_generate( $event );
 	}
 
 	/**
 	 * Test before_generate does nothing when no config found.
 	 */
 	public function test_before_generate_does_nothing_when_no_config(): void {
-		$prompt_builder = new \stdClass();
+		// Mock the event object with getCapability() method.
+		$cap_enum        = new \stdClass();
+		$cap_enum->value = 'text_generation';
+
+		$event = Mockery::mock( 'BeforeGenerateResultEvent' );
+		$event->shouldReceive( 'getCapability' )->andReturn( $cap_enum );
 
 		Filters\expectApplied( 'ai_router_get_configuration' )
 			->once()
+			->with( null, 'text_generation' )
 			->andReturn( null );
 
 		$this->capability_map
 			->shouldReceive( 'get_config_for_capability' )
 			->once()
+			->with( 'text_generation' )
 			->andReturn( null );
 
 		$this->repository
@@ -305,6 +319,7 @@ class RouterTest extends TestCase {
 		$this->repository
 			->shouldReceive( 'get_by_capability' )
 			->once()
+			->with( 'text_generation' )
 			->andReturn( [] );
 
 		// ai_router_routed should NOT be called.
@@ -312,6 +327,6 @@ class RouterTest extends TestCase {
 			->never();
 
 		$router = new Router( $this->repository, $this->capability_map );
-		$router->before_generate( $prompt_builder, 'text_generation' );
+		$router->before_generate( $event );
 	}
 }
