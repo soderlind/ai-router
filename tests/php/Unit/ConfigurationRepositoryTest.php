@@ -218,7 +218,8 @@ class ConfigurationRepositoryTest extends TestCase {
 	 *
 	 * Azure OpenAI unregisters from wp_get_connectors(), so we sync to
 	 * the ai_router_credential_sentinel option. We also sync
-	 * Azure-specific settings (endpoint, deployment, api_version).
+	 * Azure-specific settings (api_key, endpoint only — NOT deployment_id
+	 * or capabilities, so the model metadata directory discovers all models).
 	 */
 	public function test_save_syncs_azure_api_key_to_connector_option(): void {
 		Functions\expect( 'get_option' )
@@ -237,7 +238,7 @@ class ConfigurationRepositoryTest extends TestCase {
 			->with( 'connectors_ai_ai_router_api_key', '1' )
 			->andReturn( true );
 
-		// Sync Azure-specific options.
+		// Sync Azure-specific options (api_key and endpoint only).
 		Functions\expect( 'update_option' )
 			->once()
 			->with( 'connectors_ai_azure_openai_api_key', 'azure-test-key' )
@@ -246,16 +247,6 @@ class ConfigurationRepositoryTest extends TestCase {
 		Functions\expect( 'update_option' )
 			->once()
 			->with( 'connectors_ai_azure_openai_endpoint', 'https://test.openai.azure.com' )
-			->andReturn( true );
-
-		Functions\expect( 'update_option' )
-			->once()
-			->with( 'connectors_ai_azure_openai_deployment_id', 'gpt-4' )
-			->andReturn( true );
-
-		Functions\expect( 'update_option' )
-			->once()
-			->with( 'connectors_ai_azure_openai_api_version', '2024-02-15-preview' )
 			->andReturn( true );
 
 		$config = Configuration::from_array(
@@ -278,6 +269,64 @@ class ConfigurationRepositoryTest extends TestCase {
 		$result     = $repository->save( $config );
 
 		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Test sync_request_options sets deployment_id and api_version for Azure.
+	 */
+	public function test_sync_request_options_sets_deployment_and_version(): void {
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_azure_openai_deployment_id', 'gpt-image-1' )
+			->andReturn( true );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_azure_openai_api_version', '2025-04-01-preview' )
+			->andReturn( true );
+
+		$config = Configuration::from_array(
+			[
+				'id'            => 'image-config',
+				'name'          => 'Image Config',
+				'provider_type' => 'azure_openai',
+				'settings'      => [
+					'api_key'       => 'test-key',
+					'deployment_id' => 'gpt-image-1',
+					'api_version'   => '2025-04-01-preview',
+				],
+				'capabilities'  => [ 'image_generation' ],
+				'is_default'    => false,
+			]
+		);
+
+		$repository = new ConfigurationRepository();
+		$repository->sync_request_options( $config );
+	}
+
+	/**
+	 * Test sync_request_options does nothing for non-Azure providers.
+	 */
+	public function test_sync_request_options_skips_non_azure(): void {
+		// No update_option calls expected.
+		$config = Configuration::from_array(
+			[
+				'id'            => 'openai-config',
+				'name'          => 'OpenAI Config',
+				'provider_type' => 'openai',
+				'settings'      => [
+					'api_key' => 'test-key',
+				],
+				'capabilities'  => [ 'text_generation' ],
+				'is_default'    => false,
+			]
+		);
+
+		$repository = new ConfigurationRepository();
+		$repository->sync_request_options( $config );
+
+		// If we got here without errors, no update_option was called.
+		$this->assertTrue( true );
 	}
 
 	/**

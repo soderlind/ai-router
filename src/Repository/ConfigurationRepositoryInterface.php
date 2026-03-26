@@ -76,4 +76,27 @@ interface ConfigurationRepositoryInterface {
 	 * @return int
 	 */
 	public function count(): int;
+
+	/**
+	 * Sync configuration settings to connector options.
+	 *
+	 * For Azure OpenAI, syncs api_key and endpoint only — NOT deployment_id
+	 * or capabilities — so the model metadata directory discovers all model types.
+	 *
+	 * @param Configuration $config Configuration to sync.
+	 * @return void
+	 */
+	public function sync_connector_option( Configuration $config ): void;
+
+	/**
+	 * Sync request-time options for a specific capability.
+	 *
+	 * Called just before an AI request is executed. Sets deployment_id and
+	 * api_version for the matched configuration so the provider uses the
+	 * correct values for this specific request.
+	 *
+	 * @param Configuration $config Configuration matched for this request.
+	 * @return void
+	 */
+	public function sync_request_options( Configuration $config ): void;
 }

@@ -54,9 +54,18 @@ class RouterTest extends TestCase {
 		Actions\expectAdded( 'wp_ai_client_before_generate_result' )
 			->once();
 
+		Actions\expectAdded( 'wp_ai_client_after_generate_result' )
+			->once();
+
 		// Two init hooks: register_configured_providers (priority 5) and setup_provider_authentication (priority 25).
 		Actions\expectAdded( 'init' )
 			->twice();
+
+		Filters\expectAdded( 'pre_option_connectors_ai_azure_openai_deployment_id' )
+			->once();
+
+		Filters\expectAdded( 'pre_option_connectors_ai_azure_openai_api_version' )
+			->once();
 
 		$router = new Router( $this->repository, $this->capability_map );
 		$router->init();
