@@ -5,7 +5,7 @@
  * Description: Route AI requests to different provider configurations based on capability. Allows multiple configurations of the same AI provider with different LLMs.
  * Requires at least: 7.0
  * Requires PHP: 8.3
- * Version: 1.0.0
+ * Version: 0.1.0
  * Author: Per Søderlind
  * Author URI: https://soderlind.no
  * License: GPL-2.0-or-later

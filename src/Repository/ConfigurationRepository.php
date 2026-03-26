@@ -52,7 +52,7 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 		$this->cache = [];
 		foreach ( $raw as $data ) {
 			if ( is_array( $data ) && isset( $data[ 'id' ] ) ) {
-				$config                           = Configuration::from_array( $data );
+				$config                          = Configuration::from_array( $data );
 				$this->cache[ $config->get_id()] = $config;
 			}
 		}
@@ -88,7 +88,7 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 	 * @return bool True on success.
 	 */
 	public function save( Configuration $config ): bool {
-		$all                      = $this->get_all();
+		$all                     = $this->get_all();
 		$all[ $config->get_id()] = $config;
 
 		$result = $this->persist( $all );
