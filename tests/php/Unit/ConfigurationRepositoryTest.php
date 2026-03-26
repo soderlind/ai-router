@@ -193,7 +193,7 @@ class ConfigurationRepositoryTest extends TestCase {
 
 		Functions\expect( 'update_option' )
 			->once()
-			->with( 'connectors_ai_openai_api_key', 'sk-test-key' )
+			->with( 'connectors_ai_ai_router_api_key', '1' )
 			->andReturn( true );
 
 		$config = Configuration::from_array(
@@ -217,7 +217,7 @@ class ConfigurationRepositoryTest extends TestCase {
 	 * Test save syncs Azure OpenAI settings to connector options.
 	 *
 	 * Azure OpenAI unregisters from wp_get_connectors(), so we sync to
-	 * the openai option which is always in the registry. We also sync
+	 * the ai_router_credential_sentinel option. We also sync
 	 * Azure-specific settings (endpoint, deployment, api_version).
 	 */
 	public function test_save_syncs_azure_api_key_to_connector_option(): void {
@@ -231,10 +231,10 @@ class ConfigurationRepositoryTest extends TestCase {
 			->with( 'ai_router_configurations', \Mockery::any() )
 			->andReturn( true );
 
-		// Sync to openai sentinel option.
+		// Sync to ai_router sentinel option.
 		Functions\expect( 'update_option' )
 			->once()
-			->with( 'connectors_ai_openai_api_key', 'azure-test-key' )
+			->with( 'connectors_ai_ai_router_api_key', '1' )
 			->andReturn( true );
 
 		// Sync Azure-specific options.

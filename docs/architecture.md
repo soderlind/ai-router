@@ -166,23 +166,28 @@ add_action('init', [$this, 'setup_provider_authentication'], 25);
 
 The WordPress AI plugin uses `has_ai_credentials()` to check if valid credentials exist. This function iterates over `wp_get_connectors()` looking for connectors with non-empty API keys.
 
-**Problem:** Providers like Azure OpenAI unregister from `wp_get_connectors()` to provide custom UI, making them invisible to `has_ai_credentials()`.
+**Problem:** Providers like Azure OpenAI unregister from `wp_get_connectors()` to provide custom UI, making them invisible to `has_ai_credentials()`. However, setting the OpenAI connector's API key option would make the AI Client SDK think OpenAI is configured, leading to wrong provider selection.
 
-**Solution:** When saving a configuration, AI Router syncs the API key to `connectors_ai_openai_api_key` — an option that's always checked by `has_ai_credentials()` since OpenAI remains in the connector registry.
+**Solution:** AI Router registers itself as a connector with ID `ai_router`. The WP_Connector_Registry auto-generates the option name `connectors_ai_ai_router_api_key`. When AI Router has configurations, it sets this sentinel option to "1", making `has_ai_credentials()` return true without making any actual AI provider appear configured.
 
 ```php
-// In ConfigurationRepository::save()
-private function sync_connector_option(Configuration $config): void {
-    $api_key = $config->get_setting('api_key', '');
-    if (empty($api_key)) {
-        return;
-    }
-    // Sync to openai option — always in wp_get_connectors()
-    update_option('connectors_ai_openai_api_key', $api_key);
-}
+// In Router::register_connector()
+$registry->register('ai_router', [
+    'name'           => 'AI Router',
+    'description'    => __('Capability-based AI provider routing.', 'ai-router'),
+    'type'           => 'ai_provider',
+    'authentication' => ['method' => 'api_key'],
+]);
+
+// In ConfigurationRepository::sync_connector_option()
+// Uses auto-generated option name: connectors_ai_ai_router_api_key
+update_option('connectors_ai_ai_router_api_key', '1');
 ```
 
-This ensures the AI plugin's credential check passes regardless of which provider AI Router uses.
+This ensures:
+1. `has_ai_credentials()` returns true (AI plugin features work)
+2. OpenAI provider doesn't appear configured (won't be incorrectly selected)
+3. Azure and other providers get their actual credentials synced separately
 
 ### REST API Endpoints
 
