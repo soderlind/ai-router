@@ -1,10 +1,10 @@
 === AI Router ===
-Contributors: developer
+Contributors: PerS
 Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,14 +62,20 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 
 == Changelog ==
 
-= 1.0.0 =
+= 0.2.0 =
+* Fix: Settings → Connectors now shows only one AI Router entry
+* Added: GitHub issue templates for bug reports and feature requests
+
+= 0.1.0 =
 * Initial release
-* Support for OpenAI and Azure OpenAI providers
-* Admin UI for managing configurations
+* Capability-based routing for WordPress 7.0 AI Client SDK
+* Support for OpenAI, Azure OpenAI, Anthropic, Ollama providers
+* Admin UI in Settings → Connectors
 * Capability-to-configuration mapping
 * Default configuration fallback
+* GitHub plugin updater for automatic updates
 
 == Upgrade Notice ==
 
-= 1.0.0 =
-Initial release.
+= 0.2.0 =
+Fix duplicate connector entry in Settings → Connectors.
