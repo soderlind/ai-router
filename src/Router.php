@@ -53,9 +53,6 @@ final class Router {
 	 * @return void
 	 */
 	public function init(): void {
-		// Register AI Router as a connector for credential detection.
-		add_action( 'wp_connectors_init', [ $this, 'register_connector' ] );
-
 		// Register providers early so AI Client knows about them.
 		add_action( 'init', [ $this, 'register_configured_providers' ], 5 );
 
@@ -67,30 +64,6 @@ final class Router {
 
 		// Tell AI plugin we have valid credentials when we have configured providers.
 		add_filter( 'wpai_pre_has_valid_credentials_check', [ $this, 'filter_has_valid_credentials' ] );
-	}
-
-	/**
-	 * Register AI Router as a connector.
-	 *
-	 * This makes has_ai_credentials() return true when AI Router has configurations,
-	 * without making any provider (like OpenAI) think it's configured.
-	 *
-	 * @param \WP_Connector_Registry $registry Connector registry.
-	 * @return void
-	 */
-	public function register_connector( \WP_Connector_Registry $registry ): void {
-		$registry->register(
-			'ai_router',
-			[
-				'name'           => 'AI Router',
-				'description'    => __( 'Capability-based AI provider routing.', 'ai-router' ),
-				'type'           => 'ai_provider',
-				'authentication' => [
-					'method'       => 'api_key',
-					'setting_name' => 'ai_router_credential_sentinel',
-				],
-			]
-		);
 	}
 
 	/**
