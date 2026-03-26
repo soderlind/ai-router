@@ -101,11 +101,14 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 	}
 
 	/**
-	 * Sync API key to the standard connector option.
+	 * Sync configuration to standard connector options.
 	 *
 	 * WordPress AI plugin checks wp_get_connectors() for api_key auth.
 	 * Azure OpenAI unregisters from the registry, so we sync to 'openai'
 	 * which is always in the registry. This ensures has_ai_credentials() passes.
+	 *
+	 * For Azure OpenAI, we also sync endpoint/deployment/api_version to the
+	 * options the Azure plugin expects.
 	 *
 	 * @param Configuration $config Configuration to sync.
 	 * @return void
@@ -119,6 +122,26 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 		// Always sync to 'openai' - it's always in wp_get_connectors().
 		// Azure/other providers unregister themselves, so we use openai as the sentinel.
 		update_option( 'connectors_ai_openai_api_key', $api_key );
+
+		// For Azure OpenAI, also sync endpoint and deployment settings.
+		if ( in_array( $config->get_provider_type(), [ 'azure-openai', 'azure_openai' ], true ) ) {
+			update_option( 'connectors_ai_azure_openai_api_key', $api_key );
+
+			$endpoint = $config->get_setting( 'endpoint', '' );
+			if ( ! empty( $endpoint ) ) {
+				update_option( 'connectors_ai_azure_openai_endpoint', $endpoint );
+			}
+
+			$deployment_id = $config->get_setting( 'deployment_id', '' );
+			if ( ! empty( $deployment_id ) ) {
+				update_option( 'connectors_ai_azure_openai_deployment_id', $deployment_id );
+			}
+
+			$api_version = $config->get_setting( 'api_version', '' );
+			if ( ! empty( $api_version ) ) {
+				update_option( 'connectors_ai_azure_openai_api_version', $api_version );
+			}
+		}
 	}
 
 	/**

@@ -214,10 +214,11 @@ class ConfigurationRepositoryTest extends TestCase {
 	}
 
 	/**
-	 * Test save syncs Azure OpenAI API key to openai connector option.
+	 * Test save syncs Azure OpenAI settings to connector options.
 	 *
 	 * Azure OpenAI unregisters from wp_get_connectors(), so we sync to
-	 * the openai option which is always in the registry.
+	 * the openai option which is always in the registry. We also sync
+	 * Azure-specific settings (endpoint, deployment, api_version).
 	 */
 	public function test_save_syncs_azure_api_key_to_connector_option(): void {
 		Functions\expect( 'get_option' )
@@ -230,10 +231,31 @@ class ConfigurationRepositoryTest extends TestCase {
 			->with( 'ai_router_configurations', \Mockery::any() )
 			->andReturn( true );
 
-		// Azure syncs to openai option (azure unregisters from connector registry).
+		// Sync to openai sentinel option.
 		Functions\expect( 'update_option' )
 			->once()
 			->with( 'connectors_ai_openai_api_key', 'azure-test-key' )
+			->andReturn( true );
+
+		// Sync Azure-specific options.
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_azure_openai_api_key', 'azure-test-key' )
+			->andReturn( true );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_azure_openai_endpoint', 'https://test.openai.azure.com' )
+			->andReturn( true );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_azure_openai_deployment_id', 'gpt-4' )
+			->andReturn( true );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_azure_openai_api_version', '2024-02-15-preview' )
 			->andReturn( true );
 
 		$config = Configuration::from_array(
@@ -241,7 +263,12 @@ class ConfigurationRepositoryTest extends TestCase {
 				'id'            => 'azure-config',
 				'name'          => 'Azure Config',
 				'provider_type' => 'azure-openai',
-				'settings'      => [ 'api_key' => 'azure-test-key' ],
+				'settings'      => [
+					'api_key'       => 'azure-test-key',
+					'endpoint'      => 'https://test.openai.azure.com',
+					'deployment_id' => 'gpt-4',
+					'api_version'   => '2024-02-15-preview',
+				],
 				'capabilities'  => [ 'text_generation' ],
 				'is_default'    => false,
 			]

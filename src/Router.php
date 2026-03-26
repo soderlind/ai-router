@@ -299,11 +299,10 @@ final class Router {
 
 		if ( class_exists( $auth_class ) ) {
 			try {
-				$endpoint      = $config->get_setting( 'endpoint', '' );
-				$deployment_id = $config->get_setting( 'deployment_id', '' );
-				$api_version   = $config->get_setting( 'api_version', '2024-02-15-preview' );
-
-				$auth = new $auth_class( $api_key, $endpoint, $deployment_id, $api_version );
+				// AzureApiKeyRequestAuthentication only takes API key.
+				// Endpoint/deployment/api_version are synced to connector options
+				// by ConfigurationRepository::sync_connector_option().
+				$auth = new $auth_class( $api_key );
 				$registry->setProviderRequestAuthentication( $provider_id, $auth );
 			} catch (\Throwable $e) {
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
