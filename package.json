@@ -21,7 +21,7 @@
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.0.0",
 		"@vitejs/plugin-react": "^4.3.0",
-		"@wordpress/scripts": "^30.0.0",
+		"@wordpress/scripts": "^31.7.0",
 		"jsdom": "^25.0.0",
 		"vitest": "^3.0.0"
 	},
