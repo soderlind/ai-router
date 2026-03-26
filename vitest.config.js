@@ -15,10 +15,22 @@ export default defineConfig( {
 			include: [ 'src/js/**/*.{js,jsx}' ],
 		},
 		alias: {
-			'@wordpress/element': resolve( __dirname, 'tests/js/__mocks__/@wordpress/element.js' ),
-			'@wordpress/components': resolve( __dirname, 'tests/js/__mocks__/@wordpress/components.jsx' ),
-			'@wordpress/i18n': resolve( __dirname, 'tests/js/__mocks__/@wordpress/i18n.js' ),
-			'@wordpress/api-fetch': resolve( __dirname, 'tests/js/__mocks__/@wordpress/api-fetch.js' ),
+			'@wordpress/element': resolve(
+				__dirname,
+				'tests/js/__mocks__/@wordpress/element.js'
+			),
+			'@wordpress/components': resolve(
+				__dirname,
+				'tests/js/__mocks__/@wordpress/components.jsx'
+			),
+			'@wordpress/i18n': resolve(
+				__dirname,
+				'tests/js/__mocks__/@wordpress/i18n.js'
+			),
+			'@wordpress/api-fetch': resolve(
+				__dirname,
+				'tests/js/__mocks__/@wordpress/api-fetch.js'
+			),
 		},
 	},
 } );

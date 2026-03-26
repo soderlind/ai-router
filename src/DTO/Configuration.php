@@ -65,12 +65,12 @@ final class Configuration implements JsonSerializable {
 	 */
 	public static function from_array( array $data ): self {
 		return new self(
-			id: $data['id'] ?? wp_generate_uuid4(),
-			name: $data['name'] ?? '',
-			provider_type: $data['provider_type'] ?? 'openai',
-			settings: $data['settings'] ?? [],
-			capabilities: $data['capabilities'] ?? [],
-			is_default: $data['is_default'] ?? false,
+			id: $data[ 'id' ] ?? wp_generate_uuid4(),
+			name: $data[ 'name' ] ?? '',
+			provider_type: $data[ 'provider_type' ] ?? 'openai',
+			settings: $data[ 'settings' ] ?? [],
+			capabilities: $data[ 'capabilities' ] ?? [],
+			is_default: $data[ 'is_default' ] ?? false,
 		);
 	}
 
@@ -157,12 +157,12 @@ final class Configuration implements JsonSerializable {
 	 */
 	public function with( array $updates ): self {
 		return new self(
-			id: $updates['id'] ?? $this->id,
-			name: $updates['name'] ?? $this->name,
-			provider_type: $updates['provider_type'] ?? $this->provider_type,
-			settings: $updates['settings'] ?? $this->settings,
-			capabilities: $updates['capabilities'] ?? $this->capabilities,
-			is_default: $updates['is_default'] ?? $this->is_default,
+			id: $updates[ 'id' ] ?? $this->id,
+			name: $updates[ 'name' ] ?? $this->name,
+			provider_type: $updates[ 'provider_type' ] ?? $this->provider_type,
+			settings: $updates[ 'settings' ] ?? $this->settings,
+			capabilities: $updates[ 'capabilities' ] ?? $this->capabilities,
+			is_default: $updates[ 'is_default' ] ?? $this->is_default,
 		);
 	}
 
@@ -188,8 +188,8 @@ final class Configuration implements JsonSerializable {
 	 * @return array<string, mixed>
 	 */
 	public function jsonSerialize(): array {
-		$data             = $this->to_array();
-		$data['settings'] = $this->mask_sensitive_settings( $data['settings'] );
+		$data               = $this->to_array();
+		$data[ 'settings' ] = $this->mask_sensitive_settings( $data[ 'settings' ] );
 		return $data;
 	}
 
@@ -243,12 +243,8 @@ final class Configuration implements JsonSerializable {
 			$errors[] = __( 'Configuration name is required.', 'ai-router' );
 		}
 
-		if ( ! array_key_exists( $this->provider_type, self::PROVIDER_TYPES ) ) {
-			$errors[] = sprintf(
-				/* translators: %s: provider type */
-				__( 'Invalid provider type: %s', 'ai-router' ),
-				$this->provider_type
-			);
+		if ( empty( $this->provider_type ) ) {
+			$errors[] = __( 'Provider type is required.', 'ai-router' );
 		}
 
 		// Provider-specific validation.

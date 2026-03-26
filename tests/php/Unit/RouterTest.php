@@ -43,8 +43,8 @@ class RouterTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->repository     = Mockery::mock( ConfigurationRepositoryInterface::class );
-		$this->capability_map = Mockery::mock( CapabilityMap::class );
+		$this->repository     = Mockery::mock( ConfigurationRepositoryInterface::class);
+		$this->capability_map = Mockery::mock( CapabilityMap::class);
 	}
 
 	/**
@@ -54,8 +54,9 @@ class RouterTest extends TestCase {
 		Actions\expectAdded( 'wp_ai_client_before_generate_result' )
 			->once();
 
+		// Two init hooks: register_configured_providers (priority 5) and setup_provider_authentication (priority 25).
 		Actions\expectAdded( 'init' )
-			->once();
+			->twice();
 
 		$router = new Router( $this->repository, $this->capability_map );
 		$router->init();

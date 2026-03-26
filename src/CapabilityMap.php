@@ -200,8 +200,8 @@ class CapabilityMap {
 	 * @return array<string>
 	 */
 	public function get_unmapped_capabilities(): array {
-		$map       = $this->get_map();
-		$unmapped  = [];
+		$map      = $this->get_map();
+		$unmapped = [];
 
 		foreach ( Configuration::CAPABILITIES as $capability ) {
 			if ( ! isset( $map[ $capability ] ) ) {

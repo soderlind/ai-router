@@ -51,7 +51,7 @@ sequenceDiagram
 
 | Layer | Components |
 |-------|------------|
-| **Admin UI** | `SettingsPage.php`, `ConnectorsIntegration.php`, `admin.js`, `connectors.js` |
+| **Admin UI** | `ConnectorsIntegration.php`, `connectors.js` |
 | **REST API** | `ConfigurationsController.php` |
 | **Core Logic** | `Router.php`, `CapabilityMap.php`, `ProviderDiscovery.php` |
 | **Data** | `ConfigurationRepository.php`, `Configuration.php` |
@@ -68,16 +68,14 @@ ai-router/
 │   │   ├── ConfigurationRepositoryInterface.php
 │   │   └── ConfigurationRepository.php  # CRUD for configs
 │   ├── Admin/
-│   │   ├── SettingsPage.php       # Settings → AI Router page
-│   │   └── ConnectorsIntegration.php  # Settings → Connectors page
+│   │   └── ConnectorsIntegration.php  # Settings → Connectors integration
 │   ├── Rest/
 │   │   └── ConfigurationsController.php  # REST API endpoints
 │   ├── CapabilityMap.php          # Capability → Config mapping
 │   ├── Router.php                 # Core routing logic
 │   └── ProviderDiscovery.php      # Discovers installed providers
 ├── src/js/
-│   ├── admin.js                   # Settings page React UI
-│   └── connectors.js              # Connectors page integration
+│   └── connectors.js              # Connectors page UI
 └── tests/
     ├── php/                       # PHPUnit + Brain Monkey tests
     └── js/                        # Vitest + Testing Library tests
@@ -163,6 +161,28 @@ add_action('wp_ai_client_before_generate_result', [$this, 'before_generate'], 5,
 // Set up provider authentication
 add_action('init', [$this, 'setup_provider_authentication'], 25);
 ```
+
+### Credential Sync for AI Plugin Compatibility
+
+The WordPress AI plugin uses `has_ai_credentials()` to check if valid credentials exist. This function iterates over `wp_get_connectors()` looking for connectors with non-empty API keys.
+
+**Problem:** Providers like Azure OpenAI unregister from `wp_get_connectors()` to provide custom UI, making them invisible to `has_ai_credentials()`.
+
+**Solution:** When saving a configuration, AI Router syncs the API key to `connectors_ai_openai_api_key` — an option that's always checked by `has_ai_credentials()` since OpenAI remains in the connector registry.
+
+```php
+// In ConfigurationRepository::save()
+private function sync_connector_option(Configuration $config): void {
+    $api_key = $config->get_setting('api_key', '');
+    if (empty($api_key)) {
+        return;
+    }
+    // Sync to openai option — always in wp_get_connectors()
+    update_option('connectors_ai_openai_api_key', $api_key);
+}
+```
+
+This ensures the AI plugin's credential check passes regardless of which provider AI Router uses.
 
 ### REST API Endpoints
 

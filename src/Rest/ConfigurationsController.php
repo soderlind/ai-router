@@ -11,6 +11,7 @@ namespace AIRouter\Rest;
 
 use AIRouter\CapabilityMap;
 use AIRouter\DTO\Configuration;
+use AIRouter\ProviderDiscovery;
 use AIRouter\Repository\ConfigurationRepository;
 use WP_Error;
 use WP_REST_Controller;
@@ -134,6 +135,19 @@ final class ConfigurationsController extends WP_REST_Controller {
 				],
 			]
 		);
+
+		// GET /providers - installed AI providers from WP AI Client SDK.
+		register_rest_route(
+			$this->namespace,
+			'/providers',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'get_providers' ],
+					'permission_callback' => [ $this, 'get_items_permissions_check' ],
+				],
+			]
+		);
 	}
 
 	/**
@@ -210,7 +224,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_item( $request ) {
-		$config = $this->repository->get( $request['id'] );
+		$config = $this->repository->get( $request[ 'id' ] );
 
 		if ( null === $config ) {
 			return new WP_Error(
@@ -232,11 +246,11 @@ final class ConfigurationsController extends WP_REST_Controller {
 	public function create_item( $request ) {
 		$data = [
 			'id'            => wp_generate_uuid4(),
-			'name'          => sanitize_text_field( $request['name'] ),
-			'provider_type' => sanitize_key( $request['provider_type'] ),
-			'settings'      => $this->sanitize_settings( $request['settings'] ?? [] ),
-			'capabilities'  => $this->sanitize_capabilities( $request['capabilities'] ?? [] ),
-			'is_default'    => (bool) ( $request['is_default'] ?? false ),
+			'name'          => sanitize_text_field( $request[ 'name' ] ),
+			'provider_type' => sanitize_key( $request[ 'provider_type' ] ),
+			'settings'      => $this->sanitize_settings( $request[ 'settings' ] ?? [] ),
+			'capabilities'  => $this->sanitize_capabilities( $request[ 'capabilities' ] ?? [] ),
+			'is_default'    => (bool) ( $request[ 'is_default' ] ?? false ),
 		];
 
 		$config = Configuration::from_array( $data );
@@ -267,7 +281,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( $request ) {
-		$existing = $this->repository->get( $request['id'] );
+		$existing = $this->repository->get( $request[ 'id' ] );
 
 		if ( null === $existing ) {
 			return new WP_Error(
@@ -279,26 +293,26 @@ final class ConfigurationsController extends WP_REST_Controller {
 
 		$updates = [];
 
-		if ( isset( $request['name'] ) ) {
-			$updates['name'] = sanitize_text_field( $request['name'] );
+		if ( isset( $request[ 'name' ] ) ) {
+			$updates[ 'name' ] = sanitize_text_field( $request[ 'name' ] );
 		}
 
-		if ( isset( $request['provider_type'] ) ) {
-			$updates['provider_type'] = sanitize_key( $request['provider_type'] );
+		if ( isset( $request[ 'provider_type' ] ) ) {
+			$updates[ 'provider_type' ] = sanitize_key( $request[ 'provider_type' ] );
 		}
 
-		if ( isset( $request['settings'] ) ) {
+		if ( isset( $request[ 'settings' ] ) ) {
 			// Merge with existing settings, allowing partial updates.
-			$new_settings      = $this->sanitize_settings( $request['settings'] );
-			$updates['settings'] = array_merge( $existing->get_settings(), $new_settings );
+			$new_settings          = $this->sanitize_settings( $request[ 'settings' ] );
+			$updates[ 'settings' ] = array_merge( $existing->get_settings(), $new_settings );
 		}
 
-		if ( isset( $request['capabilities'] ) ) {
-			$updates['capabilities'] = $this->sanitize_capabilities( $request['capabilities'] );
+		if ( isset( $request[ 'capabilities' ] ) ) {
+			$updates[ 'capabilities' ] = $this->sanitize_capabilities( $request[ 'capabilities' ] );
 		}
 
-		if ( isset( $request['is_default'] ) ) {
-			$updates['is_default'] = (bool) $request['is_default'];
+		if ( isset( $request[ 'is_default' ] ) ) {
+			$updates[ 'is_default' ] = (bool) $request[ 'is_default' ];
 		}
 
 		$config = $existing->with( $updates );
@@ -331,7 +345,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function delete_item( $request ) {
-		$config = $this->repository->get( $request['id'] );
+		$config = $this->repository->get( $request[ 'id' ] );
 
 		if ( null === $config ) {
 			return new WP_Error(
@@ -409,7 +423,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function set_default( WP_REST_Request $request ) {
-		$config_id = sanitize_text_field( $request['config_id'] ?? '' );
+		$config_id = sanitize_text_field( $request[ 'config_id' ] ?? '' );
 
 		if ( ! empty( $config_id ) && ! $this->repository->exists( $config_id ) ) {
 			return new WP_Error(
@@ -435,7 +449,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 		$data = $config->jsonSerialize();
 
 		// Add mapped capabilities info.
-		$data['mapped_capabilities'] = $this->capability_map->get_capabilities_for_config( $config->get_id() );
+		$data[ 'mapped_capabilities' ] = $this->capability_map->get_capabilities_for_config( $config->get_id() );
 
 		return rest_ensure_response( $data );
 	}
@@ -455,7 +469,6 @@ final class ConfigurationsController extends WP_REST_Controller {
 			'provider_type' => [
 				'required'          => true,
 				'type'              => 'string',
-				'enum'              => array_keys( Configuration::PROVIDER_TYPES ),
 				'sanitize_callback' => 'sanitize_key',
 			],
 			'settings'      => [
@@ -484,7 +497,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 
 		// All fields optional for update.
 		foreach ( $args as $key => $arg ) {
-			$args[ $key ]['required'] = false;
+			$args[ $key ][ 'required' ] = false;
 		}
 
 		return $args;
@@ -557,7 +570,6 @@ final class ConfigurationsController extends WP_REST_Controller {
 				'provider_type' => [
 					'description' => __( 'Provider type.', 'ai-router' ),
 					'type'        => 'string',
-					'enum'        => array_keys( Configuration::PROVIDER_TYPES ),
 				],
 				'settings'      => [
 					'description' => __( 'Provider settings.', 'ai-router' ),
@@ -574,5 +586,22 @@ final class ConfigurationsController extends WP_REST_Controller {
 				],
 			],
 		];
+	}
+
+	/**
+	 * Get installed AI providers from the WP AI Client SDK.
+	 *
+	 * Returns providers with their capabilities, fields, and configuration status.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function get_providers( WP_REST_Request $request ): WP_REST_Response {
+		$discovery = new ProviderDiscovery();
+
+		return rest_ensure_response( [
+			'providers'    => $discovery->get_providers(),
+			'capabilities' => $discovery->get_all_capabilities(),
+		] );
 	}
 }

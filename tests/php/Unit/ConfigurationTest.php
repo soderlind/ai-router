@@ -45,10 +45,10 @@ class ConfigurationTest extends TestCase {
 	public function test_supports_capability(): void {
 		$config = Configuration::from_array(
 			[
-				'id'           => 'test',
-				'name'         => 'Test',
+				'id'            => 'test',
+				'name'          => 'Test',
 				'provider_type' => 'openai',
-				'capabilities' => [ 'text_generation', 'image_generation' ],
+				'capabilities'  => [ 'text_generation', 'image_generation' ],
 			]
 		);
 
@@ -90,25 +90,42 @@ class ConfigurationTest extends TestCase {
 		$errors = $config->validate();
 
 		$this->assertNotEmpty( $errors );
-		$this->assertStringContainsString( 'name is required', $errors[0] );
+		$this->assertStringContainsString( 'name is required', $errors[ 0 ] );
 	}
 
 	/**
-	 * Test configuration validation with invalid provider type.
+	 * Test configuration accepts any provider type (providers are dynamic).
 	 */
-	public function test_validate_returns_error_for_invalid_provider_type(): void {
+	public function test_validate_accepts_any_provider_type(): void {
 		$config = Configuration::from_array(
 			[
-				'id'            => 'invalid-config',
+				'id'            => 'custom-config',
 				'name'          => 'Test',
-				'provider_type' => 'invalid-provider',
+				'provider_type' => 'custom-provider',
+			]
+		);
+
+		$errors = $config->validate();
+
+		$this->assertEmpty( $errors );
+	}
+
+	/**
+	 * Test configuration validation requires provider type.
+	 */
+	public function test_validate_requires_provider_type(): void {
+		$config = Configuration::from_array(
+			[
+				'id'            => 'no-provider-config',
+				'name'          => 'Test',
+				'provider_type' => '',
 			]
 		);
 
 		$errors = $config->validate();
 
 		$this->assertNotEmpty( $errors );
-		$this->assertStringContainsString( 'Invalid provider type', $errors[0] );
+		$this->assertStringContainsString( 'Provider type is required', $errors[ 0 ] );
 	}
 
 	/**
@@ -127,7 +144,7 @@ class ConfigurationTest extends TestCase {
 		$errors = $config->validate();
 
 		$this->assertNotEmpty( $errors );
-		$this->assertStringContainsString( 'endpoint is required', $errors[0] );
+		$this->assertStringContainsString( 'endpoint is required', $errors[ 0 ] );
 	}
 
 	/**
@@ -183,9 +200,9 @@ class ConfigurationTest extends TestCase {
 
 		$json = $config->jsonSerialize();
 
-		$this->assertNotSame( 'sk-verylongsecretapikey123', $json['settings']['api_key'] );
-		$this->assertStringStartsWith( 'sk-v', $json['settings']['api_key'] );
-		$this->assertStringContainsString( '*', $json['settings']['api_key'] );
+		$this->assertNotSame( 'sk-verylongsecretapikey123', $json[ 'settings' ][ 'api_key' ] );
+		$this->assertStringStartsWith( 'sk-v', $json[ 'settings' ][ 'api_key' ] );
+		$this->assertStringContainsString( '*', $json[ 'settings' ][ 'api_key' ] );
 	}
 
 	/**

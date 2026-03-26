@@ -51,9 +51,9 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 
 		$this->cache = [];
 		foreach ( $raw as $data ) {
-			if ( is_array( $data ) && isset( $data['id'] ) ) {
-				$config                        = Configuration::from_array( $data );
-				$this->cache[ $config->get_id() ] = $config;
+			if ( is_array( $data ) && isset( $data[ 'id' ] ) ) {
+				$config                           = Configuration::from_array( $data );
+				$this->cache[ $config->get_id()] = $config;
 			}
 		}
 
@@ -88,10 +88,37 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 	 * @return bool True on success.
 	 */
 	public function save( Configuration $config ): bool {
-		$all                        = $this->get_all();
-		$all[ $config->get_id() ] = $config;
+		$all                      = $this->get_all();
+		$all[ $config->get_id()] = $config;
 
-		return $this->persist( $all );
+		$result = $this->persist( $all );
+
+		// Always sync API key to connector option (even if data unchanged).
+		// This ensures has_ai_credentials() returns true for AI plugins.
+		$this->sync_connector_option( $config );
+
+		return $result;
+	}
+
+	/**
+	 * Sync API key to the standard connector option.
+	 *
+	 * WordPress AI plugin checks wp_get_connectors() for api_key auth.
+	 * Azure OpenAI unregisters from the registry, so we sync to 'openai'
+	 * which is always in the registry. This ensures has_ai_credentials() passes.
+	 *
+	 * @param Configuration $config Configuration to sync.
+	 * @return void
+	 */
+	private function sync_connector_option( Configuration $config ): void {
+		$api_key = $config->get_setting( 'api_key', '' );
+		if ( empty( $api_key ) ) {
+			return;
+		}
+
+		// Always sync to 'openai' - it's always in wp_get_connectors().
+		// Azure/other providers unregister themselves, so we use openai as the sentinel.
+		update_option( 'connectors_ai_openai_api_key', $api_key );
 	}
 
 	/**
@@ -220,7 +247,7 @@ final class ConfigurationRepository implements ConfigurationRepositoryInterface 
 			$errors = $config->validate();
 
 			if ( empty( $errors ) ) {
-				$current[ $config->get_id() ] = $config;
+				$current[ $config->get_id()] = $config;
 				++$count;
 			}
 		}

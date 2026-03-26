@@ -69,7 +69,7 @@ class ConfigurationRepositoryTest extends TestCase {
 		$this->assertCount( 2, $result );
 		$this->assertArrayHasKey( 'config-1', $result );
 		$this->assertArrayHasKey( 'config-2', $result );
-		$this->assertInstanceOf( Configuration::class, $result['config-1'] );
+		$this->assertInstanceOf( Configuration::class, $result[ 'config-1' ] );
 	}
 
 	/**
@@ -150,11 +150,12 @@ class ConfigurationRepositoryTest extends TestCase {
 
 		Functions\expect( 'update_option' )
 			->once()
+			->with( 'ai_router_configurations', \Mockery::any() )
 			->andReturnUsing(
 				function ( $key, $value ) {
 					$this->assertSame( 'ai_router_configurations', $key );
 					$this->assertCount( 1, $value );
-					$this->assertSame( 'new-config', $value[0]['id'] );
+					$this->assertSame( 'new-config', $value[ 0 ][ 'id' ] );
 					return true;
 				}
 			);
@@ -166,6 +167,82 @@ class ConfigurationRepositoryTest extends TestCase {
 				'provider_type' => 'openai',
 				'settings'      => [],
 				'capabilities'  => [],
+				'is_default'    => false,
+			]
+		);
+
+		$repository = new ConfigurationRepository();
+		$result     = $repository->save( $config );
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Test save syncs API key to connector option.
+	 */
+	public function test_save_syncs_api_key_to_connector_option(): void {
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'ai_router_configurations', [] )
+			->andReturn( [] );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'ai_router_configurations', \Mockery::any() )
+			->andReturn( true );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_openai_api_key', 'sk-test-key' )
+			->andReturn( true );
+
+		$config = Configuration::from_array(
+			[
+				'id'            => 'api-config',
+				'name'          => 'API Config',
+				'provider_type' => 'openai',
+				'settings'      => [ 'api_key' => 'sk-test-key' ],
+				'capabilities'  => [ 'text_generation' ],
+				'is_default'    => false,
+			]
+		);
+
+		$repository = new ConfigurationRepository();
+		$result     = $repository->save( $config );
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Test save syncs Azure OpenAI API key to openai connector option.
+	 *
+	 * Azure OpenAI unregisters from wp_get_connectors(), so we sync to
+	 * the openai option which is always in the registry.
+	 */
+	public function test_save_syncs_azure_api_key_to_connector_option(): void {
+		Functions\expect( 'get_option' )
+			->once()
+			->with( 'ai_router_configurations', [] )
+			->andReturn( [] );
+
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'ai_router_configurations', \Mockery::any() )
+			->andReturn( true );
+
+		// Azure syncs to openai option (azure unregisters from connector registry).
+		Functions\expect( 'update_option' )
+			->once()
+			->with( 'connectors_ai_openai_api_key', 'azure-test-key' )
+			->andReturn( true );
+
+		$config = Configuration::from_array(
+			[
+				'id'            => 'azure-config',
+				'name'          => 'Azure Config',
+				'provider_type' => 'azure-openai',
+				'settings'      => [ 'api_key' => 'azure-test-key' ],
+				'capabilities'  => [ 'text_generation' ],
 				'is_default'    => false,
 			]
 		);

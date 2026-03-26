@@ -28,7 +28,7 @@ interface ConfigurationRepositoryInterface {
 	 * @param string $id Configuration ID.
 	 * @return Configuration|null
 	 */
-	public function get(string $id): ?Configuration;
+	public function get( string $id ): ?Configuration;
 
 	/**
 	 * Save a configuration.
@@ -36,7 +36,7 @@ interface ConfigurationRepositoryInterface {
 	 * @param Configuration $config Configuration to save.
 	 * @return bool
 	 */
-	public function save(Configuration $config): bool;
+	public function save( Configuration $config ): bool;
 
 	/**
 	 * Delete a configuration.
@@ -44,7 +44,7 @@ interface ConfigurationRepositoryInterface {
 	 * @param string $id Configuration ID.
 	 * @return bool
 	 */
-	public function delete(string $id): bool;
+	public function delete( string $id ): bool;
 
 	/**
 	 * Check if a configuration exists.
@@ -52,7 +52,7 @@ interface ConfigurationRepositoryInterface {
 	 * @param string $id Configuration ID.
 	 * @return bool
 	 */
-	public function exists(string $id): bool;
+	public function exists( string $id ): bool;
 
 	/**
 	 * Get configurations by provider type.
@@ -60,7 +60,7 @@ interface ConfigurationRepositoryInterface {
 	 * @param string $provider_type Provider type.
 	 * @return array<string, Configuration>
 	 */
-	public function get_by_provider_type(string $provider_type): array;
+	public function get_by_provider_type( string $provider_type ): array;
 
 	/**
 	 * Get configurations that support a capability.
@@ -68,7 +68,7 @@ interface ConfigurationRepositoryInterface {
 	 * @param string $capability Capability name.
 	 * @return array<string, Configuration>
 	 */
-	public function get_by_capability(string $capability): array;
+	public function get_by_capability( string $capability ): array;
 
 	/**
 	 * Count configurations.

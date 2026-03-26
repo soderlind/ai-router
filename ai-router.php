@@ -57,12 +57,8 @@ function bootstrap(): void {
 	$capability_map = new CapabilityMap( $repository );
 	$router         = new Router( $repository, $capability_map );
 
-	// Register admin page.
+	// Register admin integration with WP 7 Connectors page.
 	if ( is_admin() ) {
-		$settings_page = new Admin\SettingsPage( $repository, $capability_map );
-		$settings_page->register();
-
-		// Integrate with WP 7 Connectors page.
 		$connectors = new Admin\ConnectorsIntegration();
 		$connectors->init();
 	}

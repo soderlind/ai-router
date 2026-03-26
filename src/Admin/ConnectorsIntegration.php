@@ -2,7 +2,8 @@
 /**
  * Connectors Page Integration.
  *
- * Adds AI Router link to the WP 7 Settings → Connectors page.
+ * Adds AI Router to the WP 7 Settings → Connectors page using the
+ * experimental registerConnector API.
  *
  * @package AIRouter
  */
@@ -13,12 +14,15 @@ namespace AIRouter\Admin;
 
 /**
  * Integrates AI Router into the Connectors admin page.
- *
- * Since WP 7 Connectors uses ES modules and the @wordpress/boot system,
- * full integration requires an ESM build. For simplicity, this class
- * adds a menu item that links to the standalone AI Router settings page.
  */
 class ConnectorsIntegration {
+
+	/**
+	 * Script module handle.
+	 *
+	 * @var string
+	 */
+	private const MODULE_HANDLE = 'ai-router-connectors';
 
 	/**
 	 * Initialize the integration.
@@ -26,71 +30,53 @@ class ConnectorsIntegration {
 	 * @return void
 	 */
 	public function init(): void {
-		// Add menu item to Connectors page that links to AI Router settings.
-		add_action( 'options-connectors-wp-admin_init', [ $this, 'register_connectors_menu_item' ] );
+		// Register the script module on init (like Azure OpenAI provider).
+		add_action( 'init', [ $this, 'register_script_module' ] );
 
-		// Enqueue script to handle the external navigation.
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_navigation_script' ] );
+		// Enqueue on both possible connectors page hooks (Beta 3 + RC1 compat).
+		add_action( 'options-connectors-wp-admin_init', [ $this, 'enqueue_script_module' ] );
+		add_action( 'connectors-wp-admin_init', [ $this, 'enqueue_script_module' ] );
 	}
 
 	/**
-	 * Register the AI Router menu item on the Connectors page.
+	 * Register the script module.
 	 *
 	 * @return void
 	 */
-	public function register_connectors_menu_item(): void {
-		if ( ! function_exists( 'wp_register_connectors_wp_admin_menu_item' ) ) {
+	public function register_script_module(): void {
+		if ( ! function_exists( 'wp_register_script_module' ) ) {
 			return;
 		}
 
-		// Register menu item pointing to the external route.
-		wp_register_connectors_wp_admin_menu_item(
-			'ai-router',
-			__( 'AI Router', 'ai-router' ),
-			'/router'
-		);
+		$asset_file = AI_ROUTER_PATH . 'build/connectors.asset.php';
+		$version    = AI_ROUTER_VERSION;
 
-		// Register a route that will redirect to the settings page.
-		if ( function_exists( 'wp_register_connectors_wp_admin_route' ) ) {
-			wp_register_connectors_wp_admin_route( '/router' );
+		if ( file_exists( $asset_file ) ) {
+			$asset   = require $asset_file;
+			$version = $asset[ 'version' ] ?? $version;
 		}
+
+		// Register as a script module with @wordpress/connectors dependency.
+		// Use dynamic import to match Azure OpenAI pattern.
+		wp_register_script_module(
+			self::MODULE_HANDLE,
+			plugins_url( 'build/connectors.js', AI_ROUTER_FILE ),
+			[
+				[
+					'id'     => '@wordpress/connectors',
+					'import' => 'dynamic',
+				],
+			],
+			$version
+		);
 	}
 
 	/**
-	 * Enqueue script to handle navigation from Connectors to AI Router settings.
+	 * Enqueue the script module on the Connectors page.
 	 *
-	 * @param string $hook_suffix Admin page hook suffix.
 	 * @return void
 	 */
-	public function enqueue_navigation_script( string $hook_suffix ): void {
-		// Only on Connectors page.
-		$screen = get_current_screen();
-		if ( ! $screen || 'connectors' !== $screen->id ) {
-			return;
-		}
-
-		$settings_url = admin_url( 'options-general.php?page=ai-router' );
-
-		// Add inline script that intercepts navigation to /router and redirects.
-		wp_add_inline_script(
-			'wp-url', // Dependency that's loaded on Connectors page.
-			sprintf(
-				'(function() {
-					var settingsUrl = %s;
-					// Listen for route changes and redirect /router to external page.
-					var observer = new MutationObserver(function() {
-						if (window.location.hash === "#/router" || window.location.pathname.endsWith("/router")) {
-							window.location.href = settingsUrl;
-						}
-					});
-					observer.observe(document.body, { childList: true, subtree: true });
-					// Also check on load.
-					if (window.location.hash === "#/router") {
-						window.location.href = settingsUrl;
-					}
-				})();',
-				wp_json_encode( $settings_url )
-			)
-		);
+	public function enqueue_script_module(): void {
+		wp_enqueue_script_module( self::MODULE_HANDLE );
 	}
 }

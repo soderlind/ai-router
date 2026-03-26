@@ -24,8 +24,9 @@ final class Router {
 	 * Provider class map.
 	 */
 	private const PROVIDER_CLASSES = [
-		'openai'       => 'WordPress\\AiClient\\ExternalProviders\\OpenAi\\Provider\\OpenAiProvider',
-		'azure-openai' => 'AzureOpenAiProvider\\Provider\\AzureOpenAiProvider',
+		'openai'       => 'WordPress\\OpenAiAiProvider\\Provider\\OpenAiProvider',
+		'azure-openai' => 'WordPress\\AzureOpenAiAiProvider\\Provider\\AzureOpenAiProvider',
+		'ollama'       => 'Fueled\\AiProviderForOllama\\Provider\\OllamaProvider',
 	];
 
 	/**
@@ -52,11 +53,92 @@ final class Router {
 	 * @return void
 	 */
 	public function init(): void {
+		// Register providers early so AI Client knows about them.
+		add_action( 'init', [ $this, 'register_configured_providers' ], 5 );
+
 		// Hook before AI generation to inject routing.
 		add_action( 'wp_ai_client_before_generate_result', [ $this, 'before_generate' ], 5, 2 );
 
 		// Set up authentication for configured providers on init.
 		add_action( 'init', [ $this, 'setup_provider_authentication' ], 25 );
+
+		// Tell AI plugin we have valid credentials when we have configured providers.
+		add_filter( 'wpai_pre_has_valid_credentials_check', [ $this, 'filter_has_valid_credentials' ] );
+	}
+
+	/**
+	 * Filter AI plugin's credential check.
+	 *
+	 * Returns true if AI Router has at least one configuration with an API key,
+	 * allowing the AI plugin to function without separately configured connectors.
+	 *
+	 * @param bool|null $has_valid Whether credentials are valid (null = use default check).
+	 * @return bool|null
+	 */
+	public function filter_has_valid_credentials( ?bool $has_valid ): ?bool {
+		// If already validated by something else, don't override.
+		if ( true === $has_valid ) {
+			return $has_valid;
+		}
+
+		// Check if we have any configuration with an API key.
+		foreach ( $this->repository->get_all() as $config ) {
+			$api_key = $config->get_setting( 'api_key', '' );
+			if ( ! empty( $api_key ) ) {
+				return true;
+			}
+		}
+
+		// Fall back to default check.
+		return $has_valid;
+	}
+
+	/**
+	 * Register providers based on which provider plugins are installed.
+	 *
+	 * This ensures providers are available in the AI Client registry
+	 * when the provider plugin is installed. Configuration (API keys, etc.)
+	 * is handled separately by AI Router.
+	 *
+	 * @return void
+	 */
+	public function register_configured_providers(): void {
+		if ( ! class_exists( AiClient::class) ) {
+			return;
+		}
+
+		$registry = AiClient::defaultRegistry();
+
+		foreach ( self::PROVIDER_CLASSES as $provider_type => $provider_class ) {
+			// Skip if provider plugin is not installed.
+			if ( ! class_exists( $provider_class ) ) {
+				continue;
+			}
+
+			// Get provider ID for this type.
+			$provider_id = $this->get_provider_id( $provider_type );
+
+			if ( ! $provider_id ) {
+				continue;
+			}
+
+			// Register if not already registered.
+			if ( ! $registry->hasProvider( $provider_id ) ) {
+				try {
+					$registry->registerProvider( $provider_class );
+
+					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+						// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+						error_log( sprintf( 'AI Router: Registered provider %s', $provider_id ) );
+					}
+				} catch (\Throwable $e) {
+					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+						// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+						error_log( sprintf( 'AI Router: Failed to register provider %s: %s', $provider_id, $e->getMessage() ) );
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -149,7 +231,7 @@ final class Router {
 	 * @return void
 	 */
 	public function setup_provider_authentication(): void {
-		if ( ! class_exists( AiClient::class ) ) {
+		if ( ! class_exists( AiClient::class) ) {
 			return;
 		}
 
@@ -176,7 +258,7 @@ final class Router {
 				try {
 					$auth = new ApiKeyRequestAuthentication( $api_key );
 					$registry->setProviderRequestAuthentication( $provider_id, $auth );
-				} catch ( \Throwable $e ) {
+				} catch (\Throwable $e) {
 					// Log but don't break.
 					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 						// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -195,7 +277,7 @@ final class Router {
 	 * @return void
 	 */
 	private function setup_azure_authentication( Configuration $config, object $registry ): void {
-		$provider_id = 'azure-openai';
+		$provider_id = 'azure_openai';
 		$api_key     = $config->get_setting( 'api_key', '' );
 
 		if ( empty( $api_key ) ) {
@@ -203,7 +285,7 @@ final class Router {
 		}
 
 		// Check if Azure provider's custom auth class exists.
-		$auth_class = 'AzureOpenAiProvider\\Http\\AzureApiKeyRequestAuthentication';
+		$auth_class = 'WordPress\\AzureOpenAiAiProvider\\Http\\AzureApiKeyRequestAuthentication';
 
 		if ( class_exists( $auth_class ) ) {
 			try {
@@ -213,7 +295,7 @@ final class Router {
 
 				$auth = new $auth_class( $api_key, $endpoint, $deployment_id, $api_version );
 				$registry->setProviderRequestAuthentication( $provider_id, $auth );
-			} catch ( \Throwable $e ) {
+			} catch (\Throwable $e) {
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 					error_log( sprintf( 'AI Router: Failed to set Azure auth: %s', $e->getMessage() ) );
@@ -223,20 +305,29 @@ final class Router {
 	}
 
 	/**
+	 * Get the provider ID for a provider type.
+	 *
+	 * @param string $provider_type Provider type (e.g., 'openai', 'azure-openai').
+	 * @return string|null
+	 */
+	private function get_provider_id( string $provider_type ): ?string {
+		$map = [
+			'openai'       => 'openai',
+			'azure-openai' => 'azure_openai',
+			'ollama'       => 'ollama',
+		];
+
+		return $map[ $provider_type ] ?? null;
+	}
+
+	/**
 	 * Get the provider ID for a configuration.
 	 *
 	 * @param Configuration $config Configuration.
 	 * @return string|null
 	 */
 	private function get_provider_id_for_config( Configuration $config ): ?string {
-		$type = $config->get_provider_type();
-
-		$map = [
-			'openai'       => 'openai',
-			'azure-openai' => 'azure-openai',
-		];
-
-		return $map[ $type ] ?? null;
+		return $this->get_provider_id( $config->get_provider_type() );
 	}
 
 	/**
@@ -261,7 +352,7 @@ final class Router {
 		}
 
 		// Check if underlying provider is registered.
-		if ( class_exists( AiClient::class ) ) {
+		if ( class_exists( AiClient::class) ) {
 			$registry    = AiClient::defaultRegistry();
 			$provider_id = $this->get_provider_id_for_config( $config );
 

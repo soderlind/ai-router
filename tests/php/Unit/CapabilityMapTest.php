@@ -33,7 +33,7 @@ class CapabilityMapTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->repository = Mockery::mock( ConfigurationRepositoryInterface::class );
+		$this->repository = Mockery::mock( ConfigurationRepositoryInterface::class);
 	}
 
 	/**
@@ -164,7 +164,7 @@ class CapabilityMapTest extends TestCase {
 			->andReturnUsing(
 				function ( $key, $value ) {
 					$this->assertSame( 'ai_router_capability_map', $key );
-					$this->assertSame( 'config-new', $value['text_generation'] );
+					$this->assertSame( 'config-new', $value[ 'text_generation' ] );
 					return true;
 				}
 			);
@@ -274,7 +274,7 @@ class CapabilityMapTest extends TestCase {
 				function ( $key, $value ) {
 					$this->assertSame( 'ai_router_capability_map', $key );
 					$this->assertCount( 1, $value );
-					$this->assertSame( 'config-keep', $value['image_generation'] );
+					$this->assertSame( 'config-keep', $value[ 'image_generation' ] );
 					return true;
 				}
 			);
@@ -389,8 +389,8 @@ class CapabilityMapTest extends TestCase {
 			->once()
 			->andReturnUsing(
 				function ( $key, $value ) {
-					$this->assertSame( 'text-config', $value['text_generation'] );
-					$this->assertSame( 'image-config', $value['image_generation'] );
+					$this->assertSame( 'text-config', $value[ 'text_generation' ] );
+					$this->assertSame( 'image-config', $value[ 'image_generation' ] );
 					return true;
 				}
 			);

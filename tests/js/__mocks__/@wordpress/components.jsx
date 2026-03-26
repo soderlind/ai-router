@@ -60,10 +60,20 @@ export const PanelBody = ( { children, title, initialOpen, ...props } ) => (
 	</div>
 );
 
-export const SelectControl = ( { label, value, onChange, options, ...props } ) => (
+export const SelectControl = ( {
+	label,
+	value,
+	onChange,
+	options,
+	...props
+} ) => (
 	<div className="components-select-control">
 		{ label && <label>{ label }</label> }
-		<select value={ value } onChange={ ( e ) => onChange( e.target.value ) } { ...props }>
+		<select
+			value={ value }
+			onChange={ ( e ) => onChange( e.target.value ) }
+			{ ...props }
+		>
 			{ options?.map( ( opt ) => (
 				<option key={ opt.value } value={ opt.value }>
 					{ opt.label }
@@ -73,16 +83,35 @@ export const SelectControl = ( { label, value, onChange, options, ...props } ) =
 	</div>
 );
 
-export const Spinner = () => <div className="components-spinner" data-testid="spinner" />;
+export const Spinner = () => (
+	<div className="components-spinner" data-testid="spinner" />
+);
 
-export const TextControl = ( { label, value, onChange, type = 'text', ...props } ) => (
+export const TextControl = ( {
+	label,
+	value,
+	onChange,
+	type = 'text',
+	...props
+} ) => (
 	<div className="components-text-control">
 		{ label && <label>{ label }</label> }
-		<input type={ type } value={ value || '' } onChange={ ( e ) => onChange( e.target.value ) } { ...props } />
+		<input
+			type={ type }
+			value={ value || '' }
+			onChange={ ( e ) => onChange( e.target.value ) }
+			{ ...props }
+		/>
 	</div>
 );
 
-export const CheckboxControl = ( { label, checked, onChange, help, ...props } ) => (
+export const CheckboxControl = ( {
+	label,
+	checked,
+	onChange,
+	help,
+	...props
+} ) => (
 	<div className="components-checkbox-control">
 		<input
 			type="checkbox"
@@ -91,7 +120,9 @@ export const CheckboxControl = ( { label, checked, onChange, help, ...props } ) 
 			{ ...props }
 		/>
 		{ label && <label>{ label }</label> }
-		{ help && <p className="components-checkbox-control__help">{ help }</p> }
+		{ help && (
+			<p className="components-checkbox-control__help">{ help }</p>
+		) }
 	</div>
 );
 
