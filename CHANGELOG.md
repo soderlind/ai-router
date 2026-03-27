@@ -5,6 +5,27 @@ All notable changes to AI Router will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-27
+
+### Changed
+
+- Complete admin UI rewrite using WordPress 7 Connectors API and wp.components
+- Replaced alert/confirm dialogs with inline Notice and ConfirmDialog components
+- ConfigRow uses CSS Grid layout for consistent alignment
+- Capability routing uses config's own capabilities instead of provider metadata
+
+### Fixed
+
+- Provider type normalization: `azure_openai` ↔ `azure-openai` mismatch at REST boundary
+- Default configuration read: API returns `default_id`, UI now correctly reads it
+- Secret fields use sentinel value to prevent accidental overwrites on edit
+- Capability routing dropdowns now correctly list all configs that support each capability
+
+### Added
+
+- Vitest test suite for connectors.js (6 tests)
+- `@wordpress/connectors` mock for test environment
+
 ## [0.3.0] - 2026-03-27
 
 ### Added

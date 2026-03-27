@@ -247,7 +247,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 		$data = [
 			'id'            => wp_generate_uuid4(),
 			'name'          => sanitize_text_field( $request[ 'name' ] ),
-			'provider_type' => sanitize_key( $request[ 'provider_type' ] ),
+			'provider_type' => $this->normalize_provider_type( sanitize_key( $request[ 'provider_type' ] ) ),
 			'settings'      => $this->sanitize_settings( $request[ 'settings' ] ?? [] ),
 			'capabilities'  => $this->sanitize_capabilities( $request[ 'capabilities' ] ?? [] ),
 			'is_default'    => (bool) ( $request[ 'is_default' ] ?? false ),
@@ -298,7 +298,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 		}
 
 		if ( isset( $request[ 'provider_type' ] ) ) {
-			$updates[ 'provider_type' ] = sanitize_key( $request[ 'provider_type' ] );
+			$updates[ 'provider_type' ] = $this->normalize_provider_type( sanitize_key( $request[ 'provider_type' ] ) );
 		}
 
 		if ( isset( $request[ 'settings' ] ) ) {
@@ -501,6 +501,23 @@ final class ConfigurationsController extends WP_REST_Controller {
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Normalize provider_type to canonical hyphenated form.
+	 *
+	 * Accepts both underscore (azure_openai) and hyphen (azure-openai) variants
+	 * and returns the canonical hyphenated slug used by Router and DTO.
+	 *
+	 * @param string $provider_type Raw provider type.
+	 * @return string Canonical provider type.
+	 */
+	private function normalize_provider_type( string $provider_type ): string {
+		$aliases = [
+			'azure_openai' => 'azure-openai',
+		];
+
+		return $aliases[ $provider_type ] ?? $provider_type;
 	}
 
 	/**

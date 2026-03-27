@@ -31,6 +31,10 @@ export default defineConfig( {
 				__dirname,
 				'tests/js/__mocks__/@wordpress/api-fetch.js'
 			),
+			'@wordpress/connectors': resolve(
+				__dirname,
+				'tests/js/__mocks__/@wordpress/connectors.js'
+			),
 		},
 	},
 } );
