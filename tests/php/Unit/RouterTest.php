@@ -67,6 +67,9 @@ class RouterTest extends TestCase {
 		Filters\expectAdded( 'pre_option_connectors_ai_azure_openai_api_version' )
 			->once();
 
+		Filters\expectAdded( 'pre_option_connectors_ai_azure_openai_capabilities' )
+			->once();
+
 		$router = new Router( $this->repository, $this->capability_map );
 		$router->init();
 	}

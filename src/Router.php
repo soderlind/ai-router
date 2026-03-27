@@ -51,6 +51,13 @@ final class Router {
 	private ?string $active_api_version = null;
 
 	/**
+	 * Active capabilities override for the current request.
+	 *
+	 * @var array<string>|null
+	 */
+	private ?array $active_capabilities = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ConfigurationRepositoryInterface $repository     Configuration repository.
@@ -86,6 +93,7 @@ final class Router {
 		// Return false (not found) when no override is active, letting the real option through.
 		add_filter( 'pre_option_connectors_ai_azure_openai_deployment_id', [ $this, 'filter_deployment_id' ] );
 		add_filter( 'pre_option_connectors_ai_azure_openai_api_version', [ $this, 'filter_api_version' ] );
+		add_filter( 'pre_option_connectors_ai_azure_openai_capabilities', [ $this, 'filter_capabilities' ] );
 	}
 
 	/**
@@ -202,6 +210,7 @@ final class Router {
 		if ( in_array( $config->get_provider_type(), [ 'azure-openai', 'azure_openai' ], true ) ) {
 			$this->active_deployment_id = $config->get_setting( 'deployment_id', '' );
 			$this->active_api_version   = $config->get_setting( 'api_version', '' );
+			$this->active_capabilities  = $config->get_capabilities();
 		}
 
 		// Re-set provider auth for this request's API key.
@@ -248,6 +257,7 @@ final class Router {
 	public function after_generate( object $event ): void {
 		$this->active_deployment_id = null;
 		$this->active_api_version   = null;
+		$this->active_capabilities  = null;
 		$this->current_capability   = null;
 	}
 
@@ -281,6 +291,22 @@ final class Router {
 	public function filter_api_version( $value ) {
 		if ( null !== $this->active_api_version ) {
 			return $this->active_api_version;
+		}
+		return $value;
+	}
+
+	/**
+	 * Filter for pre_option_connectors_ai_azure_openai_capabilities.
+	 *
+	 * When an override is active, returns the matched config's capabilities
+	 * so the Azure metadata directory creates a model with the correct capability.
+	 *
+	 * @param mixed $value Pre-option value (false = use real option).
+	 * @return mixed
+	 */
+	public function filter_capabilities( $value ) {
+		if ( null !== $this->active_capabilities ) {
+			return $this->active_capabilities;
 		}
 		return $value;
 	}
