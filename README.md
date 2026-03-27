@@ -10,8 +10,7 @@
 
 Route AI requests to different provider configurations based on capability. Configure multiple instances of the same AI provider (e.g., GPT-4o for text, gpt-image-1 for images) and let AI Router automatically select the right one.
 
-<img width="100%"  alt="Screenshot 2026-03-27 at 02 58 46" src="https://github.com/user-attachments/assets/636db5b2-fc24-4e94-8458-e5cf904e5740" />
-
+<img width="100%"  alt="Screenshot 2026-03-27 at 15 54 33" src="https://github.com/user-attachments/assets/aea4a031-cd82-4b7d-b145-f5d87e455caf" />
 
 ## Why AI Router?
 
