@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,11 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 
 == Changelog ==
 
+= 0.3.0 =
+* Added: Per-request deployment switching via pre_option filters for Azure OpenAI
+* Added: Capabilities pre_option filter for correct image model discovery
+* Added: Support for image generation routing (gpt-image-1, DALL-E)
+
 = 0.2.0 =
 * Fix: Settings → Connectors now shows only one AI Router entry
 * Added: GitHub issue templates for bug reports and feature requests
@@ -76,6 +81,9 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 * GitHub plugin updater for automatic updates
 
 == Upgrade Notice ==
+
+= 0.3.0 =
+Adds image generation routing support for Azure OpenAI deployments.
 
 = 0.2.0 =
 Fix duplicate connector entry in Settings → Connectors.

@@ -37,6 +37,27 @@ final class Router {
 	private ?string $current_capability = null;
 
 	/**
+	 * Active deployment ID override for the current request.
+	 *
+	 * @var string|null
+	 */
+	private ?string $active_deployment_id = null;
+
+	/**
+	 * Active API version override for the current request.
+	 *
+	 * @var string|null
+	 */
+	private ?string $active_api_version = null;
+
+	/**
+	 * Active capabilities override for the current request.
+	 *
+	 * @var array<string>|null
+	 */
+	private ?array $active_capabilities = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ConfigurationRepositoryInterface $repository     Configuration repository.
@@ -59,11 +80,20 @@ final class Router {
 		// Hook before AI generation to inject routing.
 		add_action( 'wp_ai_client_before_generate_result', [ $this, 'before_generate' ], 5 );
 
+		// Hook after AI generation to clean up request-scoped overrides.
+		add_action( 'wp_ai_client_after_generate_result', [ $this, 'after_generate' ], 5 );
+
 		// Set up authentication for configured providers on init.
 		add_action( 'init', [ $this, 'setup_provider_authentication' ], 25 );
 
 		// Tell AI plugin we have valid credentials when we have configured providers.
 		add_filter( 'wpai_pre_has_valid_credentials_check', [ $this, 'filter_has_valid_credentials' ] );
+
+		// Intercept deployment_id and api_version reads so we can override per-request.
+		// Return false (not found) when no override is active, letting the real option through.
+		add_filter( 'pre_option_connectors_ai_azure_openai_deployment_id', [ $this, 'filter_deployment_id' ] );
+		add_filter( 'pre_option_connectors_ai_azure_openai_api_version', [ $this, 'filter_api_version' ] );
+		add_filter( 'pre_option_connectors_ai_azure_openai_capabilities', [ $this, 'filter_capabilities' ] );
 	}
 
 	/**
@@ -145,8 +175,8 @@ final class Router {
 	 * Hook called before AI generation.
 	 *
 	 * Receives a BeforeGenerateResultEvent from the AI Client SDK.
-	 * At this point the model is already selected, so we just track
-	 * the capability for potential use in other hooks.
+	 * Syncs the matched configuration's settings to connector options
+	 * so the underlying provider uses the correct deployment/endpoint.
 	 *
 	 * @param object $event The BeforeGenerateResultEvent instance.
 	 * @return void
@@ -174,6 +204,38 @@ final class Router {
 			return;
 		}
 
+		// Set per-request overrides for deployment_id and api_version.
+		// The pre_option filters will return these values when the Azure
+		// provider reads the options during model execution.
+		if ( in_array( $config->get_provider_type(), [ 'azure-openai', 'azure_openai' ], true ) ) {
+			$this->active_deployment_id = $config->get_setting( 'deployment_id', '' );
+			$this->active_api_version   = $config->get_setting( 'api_version', '' );
+			$this->active_capabilities  = $config->get_capabilities();
+		}
+
+		// Re-set provider auth for this request's API key.
+		$provider_id = $this->get_provider_id_for_config( $config );
+		if ( $provider_id && class_exists( AiClient::class ) ) {
+			$registry = AiClient::defaultRegistry();
+			if ( $registry->hasProvider( $provider_id ) ) {
+				if ( 'azure-openai' === $config->get_provider_type() ) {
+					$this->setup_azure_authentication( $config, $registry );
+				} else {
+					$api_key = $config->get_setting( 'api_key', '' );
+					if ( ! empty( $api_key ) ) {
+						try {
+							$registry->setProviderRequestAuthentication(
+								$provider_id,
+								new ApiKeyRequestAuthentication( $api_key )
+							);
+						} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+							// Intentionally empty — auth already set at init.
+						}
+					}
+				}
+			}
+		}
+
 		/**
 		 * Fires when AI Router processes a request.
 		 *
@@ -182,6 +244,71 @@ final class Router {
 		 * @param object        $event      The BeforeGenerateResultEvent.
 		 */
 		do_action( 'ai_router_routed', $config, $capability, $event );
+	}
+
+	/**
+	 * Hook called after AI generation completes.
+	 *
+	 * Clears per-request overrides so subsequent requests get fresh routing.
+	 *
+	 * @param object $event The AfterGenerateResultEvent instance.
+	 * @return void
+	 */
+	public function after_generate( object $event ): void {
+		$this->active_deployment_id = null;
+		$this->active_api_version   = null;
+		$this->active_capabilities  = null;
+		$this->current_capability   = null;
+	}
+
+	/**
+	 * Filter for pre_option_connectors_ai_azure_openai_deployment_id.
+	 *
+	 * When an override is active (during model execution), returns the
+	 * matched config's deployment_id. Otherwise returns false to let
+	 * WordPress read the real option value.
+	 *
+	 * @param mixed $value Pre-option value (false = use real option).
+	 * @return mixed
+	 */
+	public function filter_deployment_id( $value ) {
+		if ( null !== $this->active_deployment_id ) {
+			return $this->active_deployment_id;
+		}
+		return $value;
+	}
+
+	/**
+	 * Filter for pre_option_connectors_ai_azure_openai_api_version.
+	 *
+	 * When an override is active (during model execution), returns the
+	 * matched config's api_version. Otherwise returns false to let
+	 * WordPress read the real option value.
+	 *
+	 * @param mixed $value Pre-option value (false = use real option).
+	 * @return mixed
+	 */
+	public function filter_api_version( $value ) {
+		if ( null !== $this->active_api_version ) {
+			return $this->active_api_version;
+		}
+		return $value;
+	}
+
+	/**
+	 * Filter for pre_option_connectors_ai_azure_openai_capabilities.
+	 *
+	 * When an override is active, returns the matched config's capabilities
+	 * so the Azure metadata directory creates a model with the correct capability.
+	 *
+	 * @param mixed $value Pre-option value (false = use real option).
+	 * @return mixed
+	 */
+	public function filter_capabilities( $value ) {
+		if ( null !== $this->active_capabilities ) {
+			return $this->active_capabilities;
+		}
+		return $value;
 	}
 
 	/**
