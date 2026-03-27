@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,15 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 
 == Changelog ==
 
+= 0.4.0 =
+* Changed: Complete admin UI rewrite using WordPress 7 Connectors API and wp.components
+* Changed: Capability routing uses config's own capabilities instead of provider metadata
+* Fixed: Provider type normalization (azure_openai ↔ azure-openai) at REST boundary
+* Fixed: Default configuration read (default_id contract)
+* Fixed: Secret fields use sentinel to prevent accidental overwrites on edit
+* Fixed: Capability routing dropdowns now correctly list eligible configs
+* Added: Vitest test suite for connectors.js (6 tests)
+
 = 0.3.0 =
 * Added: Per-request deployment switching via pre_option filters for Azure OpenAI
 * Added: Capabilities pre_option filter for correct image model discovery
@@ -81,6 +90,9 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 * GitHub plugin updater for automatic updates
 
 == Upgrade Notice ==
+
+= 0.4.0 =
+Complete admin UI rewrite with critical bug fixes for provider type normalization and capability routing.
 
 = 0.3.0 =
 Adds image generation routing support for Azure OpenAI deployments.

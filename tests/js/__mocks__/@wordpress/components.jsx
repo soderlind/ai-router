@@ -127,6 +127,18 @@ export const CheckboxControl = ( {
 );
 
 // Experimental components.
+export const __experimentalVStack = ( { children, spacing, ...props } ) => (
+	<div className="components-v-stack" { ...props }>
+		{ children }
+	</div>
+);
+
+export const __experimentalHStack = ( { children, spacing, ...props } ) => (
+	<div className="components-h-stack" { ...props }>
+		{ children }
+	</div>
+);
+
 export const __experimentalHeading = ( { level, children, ...props } ) => {
 	const Tag = `h${ level || 2 }`;
 	return <Tag { ...props }>{ children }</Tag>;
@@ -135,3 +147,22 @@ export const __experimentalHeading = ( { level, children, ...props } ) => {
 export const __experimentalText = ( { children, ...props } ) => (
 	<span { ...props }>{ children }</span>
 );
+
+export const __experimentalConfirmDialog = ( {
+	isOpen,
+	onConfirm,
+	onCancel,
+	confirmButtonText,
+	cancelButtonText,
+	children,
+	...props
+} ) =>
+	isOpen ? (
+		<div className="components-confirm-dialog" role="dialog" { ...props }>
+			<p>{ children }</p>
+			<button onClick={ onConfirm }>{ confirmButtonText || 'OK' }</button>
+			<button onClick={ onCancel }>
+				{ cancelButtonText || 'Cancel' }
+			</button>
+		</div>
+	) : null;

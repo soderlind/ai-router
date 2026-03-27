@@ -4,6 +4,36 @@
 
 import { vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import * as React from 'react';
+import apiFetch from '@wordpress/api-fetch';
+import * as wpI18n from '@wordpress/i18n';
+import * as wpComponents from '@wordpress/components';
+
+// Set up window.wp globals that connectors.js reads at module level.
+window.wp = {
+	apiFetch,
+	element: {
+		useState: React.useState,
+		useEffect: React.useEffect,
+		useCallback: React.useCallback,
+		useMemo: React.useMemo,
+		useRef: React.useRef,
+		createElement: React.createElement,
+	},
+	i18n: wpI18n,
+	components: {
+		Button: wpComponents.Button,
+		SelectControl: wpComponents.SelectControl,
+		TextControl: wpComponents.TextControl,
+		CheckboxControl: wpComponents.CheckboxControl,
+		Notice: wpComponents.Notice,
+		Spinner: wpComponents.Spinner,
+		__experimentalVStack: wpComponents.__experimentalVStack,
+		__experimentalHStack: wpComponents.__experimentalHStack,
+		__experimentalConfirmDialog:
+			wpComponents.__experimentalConfirmDialog,
+	},
+};
 
 // Mock window.aiRouterAdmin config.
 window.aiRouterAdmin = {
