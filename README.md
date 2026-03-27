@@ -6,6 +6,8 @@
 
 **Capability-based AI provider routing for WordPress 7.0**
 
+> Works with WordPress 7.0-RC1, tested using WordPress [AI](https://wordpress.org/plugins/ai/) and [Virtual Media Folders AI Organizer](https://github.com/soderlind/vmfa-ai-organizer?tab=readme-ov-file#virtual-media-folders-ai-organizer). Tested text generation and image generation, using two separate Azure OpenAI deployments (gpt-4.1 for text, gpt-image-1 for images).
+
 Route AI requests to different provider configurations based on capability. Configure multiple instances of the same AI provider (e.g., GPT-4o for text, DALL-E for images) and let AI Router automatically select the right one.
 
 ## Why AI Router?
@@ -42,6 +44,8 @@ WordPress 7.0's AI Client SDK only allows one configuration per provider type. A
 - WordPress 7.0+
 - PHP 8.3+
 - Underlying AI provider plugin(s) installed (e.g., `ai-provider-for-openai`)
+
+
 
 ## Installation
 

@@ -5,6 +5,14 @@ All notable changes to AI Router will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-27
+
+### Added
+
+- Per-request deployment switching via `pre_option` filters for Azure OpenAI
+- Capabilities `pre_option` filter for correct image model discovery
+- Support for image generation routing (gpt-image-1, DALL-E)
+
 ## [0.2.0] - 2026-03-26
 
 ### Fixed
@@ -49,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Health checks and automatic failover
 - Per-provider rate limiting
 
+[0.3.0]: https://github.com/soderlind/ai-router/releases/tag/v0.3.0
 [0.2.0]: https://github.com/soderlind/ai-router/releases/tag/v0.2.0
 [0.1.0]: https://github.com/soderlind/ai-router/releases/tag/v0.1.0
-[Unreleased]: https://github.com/soderlind/ai-router/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/soderlind/ai-router/compare/v0.3.0...HEAD
