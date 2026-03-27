@@ -10,6 +10,9 @@
 
 Route AI requests to different provider configurations based on capability. Configure multiple instances of the same AI provider (e.g., GPT-4o for text, gpt-image-1 for images) and let AI Router automatically select the right one.
 
+<img width="100%"  alt="Screenshot 2026-03-27 at 02 58 46" src="https://github.com/user-attachments/assets/636db5b2-fc24-4e94-8458-e5cf904e5740" />
+
+
 ## Why AI Router?
 
 WordPress 7.0's AI Client SDK only allows one configuration per provider type. AI Router solves this by enabling:
