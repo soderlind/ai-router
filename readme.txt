@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,9 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 
 == Changelog ==
 
+= 0.4.1 =
+* Changed: Add/edit configuration form now opens in a WordPress Modal dialog
+
 = 0.4.0 =
 * Changed: Complete admin UI rewrite using WordPress 7 Connectors API and wp.components
 * Changed: Capability routing uses config's own capabilities instead of provider metadata
@@ -90,6 +93,9 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 * GitHub plugin updater for automatic updates
 
 == Upgrade Notice ==
+
+= 0.4.1 =
+Configuration form now opens in a modal dialog for better UX.
 
 = 0.4.0 =
 Complete admin UI rewrite with critical bug fixes for provider type normalization and capability routing.

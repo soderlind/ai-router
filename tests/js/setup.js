@@ -23,6 +23,7 @@ window.wp = {
 	i18n: wpI18n,
 	components: {
 		Button: wpComponents.Button,
+		Modal: wpComponents.Modal,
 		SelectControl: wpComponents.SelectControl,
 		TextControl: wpComponents.TextControl,
 		CheckboxControl: wpComponents.CheckboxControl,

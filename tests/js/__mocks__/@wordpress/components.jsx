@@ -83,6 +83,18 @@ export const SelectControl = ( {
 	</div>
 );
 
+export const Modal = ( { title, onRequestClose, children, ...props } ) => (
+	<div className="components-modal__screen-overlay" role="dialog" aria-label={ title } { ...props }>
+		<div className="components-modal__frame">
+			<div className="components-modal__header">
+				<h1>{ title }</h1>
+				<button onClick={ onRequestClose } aria-label="Close">×</button>
+			</div>
+			<div className="components-modal__content">{ children }</div>
+		</div>
+	</div>
+);
+
 export const Spinner = () => (
 	<div className="components-spinner" data-testid="spinner" />
 );

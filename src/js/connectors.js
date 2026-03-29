@@ -27,6 +27,7 @@ const {
 const { __, sprintf } = window.wp.i18n;
 const {
 	Button,
+	Modal,
 	SelectControl,
 	TextControl,
 	CheckboxControl,
@@ -446,28 +447,13 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 		: __( 'New Configuration', 'ai-router' );
 
 	return el(
-		'div',
+		Modal,
 		{
-			className: 'ai-router-form',
-			role: 'group',
-			'aria-label': formTitle,
-			style: {
-				background: TOKENS.color.surface,
-				borderRadius: TOKENS.radius,
-				padding: TOKENS.space.lg,
-			},
+			title: formTitle,
+			onRequestClose: onCancel,
+			size: 'medium',
+			className: 'ai-router-form-modal',
 		},
-		el(
-			'h4',
-			{
-				style: {
-					margin: `0 0 ${ TOKENS.space.md }`,
-					fontSize: '14px',
-					fontWeight: 600,
-				},
-			},
-			formTitle
-		),
 		error &&
 			el(
 				Notice,
