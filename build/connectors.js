@@ -781,7 +781,7 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 	);
 }
 
-// ── Configuration List Row ───────────────────────────────────────
+// ── Configuration Card ───────────────────────────────────────────
 
 function ConfigRow( {
 	config,
@@ -793,108 +793,154 @@ function ConfigRow( {
 	onDelete,
 } ) {
 	const providerLabel = getProviderLabel( config.provider_type, providers );
-	const mappedText =
-		mappedCapabilities.length > 0
-			? sprintf(
-					/* translators: %d: number of mapped capabilities */
-					__( '%d capability mapped', 'ai-router' ),
-					mappedCapabilities.length
-			  )
-			: '';
-	const metaParts = [ providerLabel, mappedText ]
-		.filter( Boolean )
-		.join( ' · ' );
+	const totalCaps = ( config.capabilities || [] ).length;
+	const inUseCaps = mappedCapabilities.length;
+	const usagePct = totalCaps > 0 ? Math.round( ( inUseCaps / totalCaps ) * 100 ) : 0;
 
 	return el(
 		'div',
 		{
 			style: {
-				display: 'grid',
-				gridTemplateColumns: '1fr auto auto',
-				alignItems: 'center',
-				gap: TOKENS.space.md,
-				padding: `${ TOKENS.space.sm } 0`,
-				borderBottom: `1px solid ${ TOKENS.color.border }`,
+				border: `1px solid ${ TOKENS.color.border }`,
+				borderRadius: TOKENS.radius,
+				padding: TOKENS.space.md,
+				marginBottom: TOKENS.space.sm,
+				background: '#fff',
 			},
 		},
-		// Column 1: name + metadata stacked.
+		// Top row: name + actions.
 		el(
 			'div',
-			{ style: { minWidth: 0 } },
+			{
+				style: {
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'flex-start',
+				},
+			},
+			el(
+				'div',
+				null,
+				el(
+					'div',
+					{
+						style: {
+							display: 'flex',
+							alignItems: 'center',
+							gap: TOKENS.space.sm,
+						},
+					},
+					el(
+						'strong',
+						{ style: { fontSize: '14px' } },
+						config.name
+					),
+					isDefault &&
+						el( StatusChip, {
+							label: __( 'Default', 'ai-router' ),
+							variant: 'default',
+						} )
+				),
+				el(
+					'div',
+					{
+						style: {
+							color: TOKENS.color.muted,
+							fontSize: TOKENS.fontSize.sm,
+							marginTop: '2px',
+						},
+					},
+					providerLabel
+				),
+				totalCaps > 0 &&
+					el(
+						'div',
+						{
+							style: {
+								color: TOKENS.color.muted,
+								fontSize: TOKENS.fontSize.sm,
+								marginTop: '2px',
+								display: 'flex',
+								alignItems: 'center',
+								gap: '4px',
+							},
+						},
+						el( 'span', { style: { color: TOKENS.color.success, fontSize: '13px' } }, '\u2713' ),
+						sprintf(
+							/* translators: 1: in-use count, 2: total count, 3: percentage */
+							__( '%1$d of %2$d capabilities in use  (%3$d%%)', 'ai-router' ),
+							inUseCaps,
+							totalCaps,
+							usagePct
+						)
+					)
+			),
+			// Action icons.
 			el(
 				'div',
 				{
 					style: {
 						display: 'flex',
-						alignItems: 'center',
-						gap: TOKENS.space.sm,
-						flexWrap: 'wrap',
+						gap: TOKENS.space.xs,
+						flexShrink: 0,
 					},
 				},
 				el(
-					'strong',
+					Button,
 					{
-						style: {
-							fontSize: '14px',
-							whiteSpace: 'nowrap',
-							overflow: 'hidden',
-							textOverflow: 'ellipsis',
-						},
+						variant: 'tertiary',
+						size: 'compact',
+						onClick: () => onEdit( config ),
+						'aria-label': sprintf(
+							__( 'Edit %s', 'ai-router' ),
+							config.name
+						),
+						style: { color: '#2271b1' },
 					},
-					config.name
+					el( 'svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: 18, height: 18, fill: 'currentColor', 'aria-hidden': true },
+						el( 'path', { d: 'M20.1 5.1L16.9 1.9c-.5-.5-1.3-.5-1.8 0L3 14v5h5L20.1 6.9c.5-.5.5-1.3 0-1.8zM5.8 17.2H4.8v-1l9.3-9.3 1 1-9.3 9.3z' } )
+					)
 				),
-				isDefault &&
-					el( StatusChip, {
-						label: __( 'Default', 'ai-router' ),
-						variant: 'default',
-					} )
-			),
+				el(
+					Button,
+					{
+						variant: 'tertiary',
+						size: 'compact',
+						isDestructive: true,
+						onClick: () => onDelete( config ),
+						'aria-label': sprintf(
+							__( 'Delete %s', 'ai-router' ),
+							config.name
+						),
+					},
+					el( 'svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: 18, height: 18, fill: 'currentColor', 'aria-hidden': true },
+						el( 'path', { d: 'M20 5h-5.7L13 3.6c-.1-.2-.4-.4-.7-.4H11.7c-.3 0-.6.2-.7.4L9.7 5H4v2h1l1 13.1c.1.5.5.9 1 .9h10c.5 0 .9-.4 1-.9L18 7h1V5zm-3.1 14H7.1L6.2 7h11.6l-.9 12z' } )
+					)
+				)
+			)
+		),
+		// Capability chips row.
+		( config.capabilities || [] ).length > 0 &&
 			el(
 				'div',
 				{
 					style: {
-						color: TOKENS.color.muted,
-						fontSize: TOKENS.fontSize.sm,
-						marginTop: '2px',
-						whiteSpace: 'nowrap',
-						overflow: 'hidden',
-						textOverflow: 'ellipsis',
+						display: 'flex',
+						flexWrap: 'wrap',
+						gap: '6px',
+						marginTop: TOKENS.space.sm,
 					},
 				},
-				metaParts
+				...( config.capabilities || [] ).map( ( slug ) => {
+					const capLabel = capabilityLabels[ slug ] || slug;
+					const isMapped = mappedCapabilities.includes( slug );
+					return el( CapabilityChip, {
+						key: slug,
+						label: capLabel,
+						active: isMapped,
+					} );
+				} )
 			)
-		),
-		// Column 2: Edit.
-		el(
-			Button,
-			{
-				variant: 'tertiary',
-				size: 'compact',
-				onClick: () => onEdit( config ),
-				'aria-label': sprintf(
-					/* translators: %s: configuration name */
-					__( 'Edit %s', 'ai-router' ),
-					config.name
-				),
-			},
-			__( 'Edit', 'ai-router' )
-		),
-		// Column 3: Delete.
-		el(
-			Button,
-			{
-				variant: 'tertiary',
-				size: 'compact',
-				isDestructive: true,
-				onClick: () => onDelete( config ),
-				'aria-label': sprintf(
-					/* translators: %s: configuration name */
-					__( 'Delete %s', 'ai-router' ),
-					config.name
-				),
-			},
-			__( 'Delete', 'ai-router' )
-		)
 	);
 }
 
