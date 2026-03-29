@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.4.2
+Stable tag: 0.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,16 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 
 == Changelog ==
 
+= 0.4.3 =
+* Changed: Config cards use inline SVG icons for edit/delete (no dashicon font dependency)
+* Changed: Capability chips rendered inside each config card
+* Changed: Usage stats show per-card capability coverage percentage
+
+= 0.4.2 =
+* Changed: Config cards with capability usage stats, green checkmark chips, icon-only edit/delete buttons
+* Changed: Modal form renders as overlay with panel visible behind
+* Added: CapabilityChip component
+
 = 0.4.1 =
 * Changed: Add/edit configuration form now opens in a WordPress Modal dialog
 
@@ -93,6 +103,9 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 * GitHub plugin updater for automatic updates
 
 == Upgrade Notice ==
+
+= 0.4.3 =
+Config cards with inline SVG icons, capability chips, and usage stats per card.
 
 = 0.4.2 =
 Config cards redesigned with capability usage stats, green chips, and icon buttons.
