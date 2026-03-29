@@ -23,6 +23,7 @@ window.wp = {
 	i18n: wpI18n,
 	components: {
 		Button: wpComponents.Button,
+		Icon: wpComponents.Icon || ( () => null ),
 		Modal: wpComponents.Modal,
 		SelectControl: wpComponents.SelectControl,
 		TextControl: wpComponents.TextControl,

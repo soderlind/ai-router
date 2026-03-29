@@ -90,6 +90,7 @@ const {
 const { __, sprintf } = window.wp.i18n;
 const {
 	Button,
+	Icon,
 	Modal,
 	SelectControl,
 	TextControl,
@@ -400,6 +401,93 @@ function StatusChip( { label, variant } ) {
 		letterSpacing: '0.01em',
 	};
 	return el( 'span', { style, 'aria-label': label }, label );
+}
+
+// ── Capability Chip (green with checkmark) ───────────────────────
+
+function CapabilityChip( { label, active } ) {
+	const style = active
+		? {
+				background: TOKENS.color.successBg,
+				color: '#0a5c1a',
+				border: '1px solid #b8e6c8',
+		  }
+		: {
+				background: TOKENS.color.surface,
+				color: TOKENS.color.muted,
+				border: `1px solid ${ TOKENS.color.border }`,
+		  };
+	return el(
+		'span',
+		{
+			style: {
+				...style,
+				borderRadius: '12px',
+				padding: '2px 10px',
+				fontSize: TOKENS.fontSize.sm,
+				fontWeight: 500,
+				lineHeight: '20px',
+				display: 'inline-flex',
+				alignItems: 'center',
+				gap: '4px',
+				whiteSpace: 'nowrap',
+			},
+		},
+		label,
+		active && el( 'span', { style: { fontSize: '11px' } }, ' \u2713' )
+	);
+}
+
+// ── Provider First Workflow Banner ───────────────────────────────
+
+function WorkflowBanner() {
+	return el(
+		'div',
+		{
+			style: {
+				background: '#f0f6ff',
+				border: '1px solid #c5d9f0',
+				borderRadius: TOKENS.radius,
+				padding: `${ TOKENS.space.md } ${ TOKENS.space.lg }`,
+				marginBottom: TOKENS.space.lg,
+				display: 'flex',
+				alignItems: 'flex-start',
+				gap: TOKENS.space.sm,
+			},
+		},
+		el(
+			'span',
+			{
+				style: {
+					color: '#2271b1',
+					fontSize: '20px',
+					lineHeight: '1',
+					flexShrink: 0,
+				},
+			},
+			'\u24D8' // circled info
+		),
+		el(
+			'div',
+			null,
+			el(
+				'strong',
+				{ style: { display: 'block', marginBottom: '4px' } },
+				__( 'Provider First Workflow', 'ai-router' )
+			),
+			el(
+				'span',
+				{ style: { fontSize: TOKENS.fontSize.base, color: '#1e1e1e' } },
+				el( 'strong', { style: { color: '#2271b1' } }, __( 'Step 1:', 'ai-router' ) ),
+				' ',
+				__( 'Configure your AI providers with credentials and settings below.', 'ai-router' ),
+				' ',
+				el( 'strong', { style: { color: '#2271b1' } }, __( 'Step 2:', 'ai-router' ) ),
+				' ',
+				__( 'Map each capability to a configuration in the Capability Routing section.', 'ai-router' )
+			)
+		)
+	);
 }
 
 // ── Configuration Form ───────────────────────────────────────────
@@ -1038,6 +1126,7 @@ function AIRouterConnector( { slug, name, description, logo } ) {
 	// Derived state.
 	const configCount = configurations.length;
 	const mappedCount = Object.keys( capabilityMap ).length;
+	const totalCapabilities = capabilities.length;
 	const isConfigured = configCount > 0;
 
 	// Capability label lookup helper.
@@ -1154,6 +1243,19 @@ function AIRouterConnector( { slug, name, description, logo } ) {
 	// ── Panel content ────────────────────────────────────────────
 	let panelContent = null;
 
+	// Modal for create/edit (renders as overlay, panel stays visible).
+	const formModal = ( creatingConfig || editingConfig ) &&
+		el( ConfigurationForm, {
+			config: editingConfig,
+			providers,
+			capabilities,
+			onSave: handleSaveConfig,
+			onCancel: () => {
+				setEditingConfig( null );
+				setCreatingConfig( false );
+			},
+		} );
+
 	if ( isExpanded ) {
 		// Global notice bar.
 		const noticeBar =
@@ -1221,23 +1323,14 @@ function AIRouterConnector( { slug, name, description, logo } ) {
 				  } )() );
 
 		if ( creatingConfig || editingConfig ) {
-			panelContent = el(
-				'div',
-				null,
-				noticeBar,
-				el( ConfigurationForm, {
-					config: editingConfig,
-					providers,
-					capabilities,
-					onSave: handleSaveConfig,
-					onCancel: () => {
-						setEditingConfig( null );
-						setCreatingConfig( false );
-					},
-				} )
-			);
-		} else {
-			panelContent = el(
+			// Show panel content behind the modal.
+		}
+
+		panelContent = el(
+			'div',
+			null,
+			formModal,
+			el(
 				VStack,
 				{ spacing: 4, style: { padding: `${ TOKENS.space.md } 0` } },
 				noticeBar,
@@ -1278,10 +1371,11 @@ function AIRouterConnector( { slug, name, description, logo } ) {
 						el(
 							Button,
 							{
-								variant: 'secondary',
+								variant: 'primary',
 								size: 'compact',
 								onClick: () => setCreatingConfig( true ),
 							},
+							'+ ',
 							__( 'Add', 'ai-router' )
 						)
 					),
@@ -1370,10 +1464,9 @@ function AIRouterConnector( { slug, name, description, logo } ) {
 						onUpdate: setCapabilityMap,
 						showNotice,
 					} )
-			);
-		}
+			)
+		);
 	}
-
 	return el(
 		_wordpress_connectors__WEBPACK_IMPORTED_MODULE_0__.__experimentalConnectorItem,
 		{
