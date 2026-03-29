@@ -62,6 +62,11 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 
 == Changelog ==
 
+= 0.4.2 =
+* Changed: Config cards with capability usage stats, green checkmark chips, icon-only edit/delete buttons
+* Changed: Modal form renders as overlay with panel visible behind
+* Added: CapabilityChip component
+
 = 0.4.1 =
 * Changed: Add/edit configuration form now opens in a WordPress Modal dialog
 
