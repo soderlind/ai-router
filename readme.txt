@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,9 @@ If a capability isn't explicitly mapped, AI Router will use the default configur
 * GitHub plugin updater for automatic updates
 
 == Upgrade Notice ==
+
+= 0.4.2 =
+Config cards redesigned with capability usage stats, green chips, and icon buttons.
 
 = 0.4.1 =
 Configuration form now opens in a modal dialog for better UX.

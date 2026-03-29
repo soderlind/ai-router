@@ -1,6 +1,6 @@
 {
 	"name": "ai-router",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "AI Router WordPress plugin",
 	"private": true,
 	"scripts": {

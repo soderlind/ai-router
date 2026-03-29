@@ -5,6 +5,20 @@ All notable changes to AI Router will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-03-29
+
+### Changed
+
+- Config cards: bordered cards with capability usage stats and percentage
+- Capability chips: green with checkmark when mapped, grey when unmapped
+- Icon-only edit/delete buttons using dashicons
+- Add button now primary variant with + prefix
+- Modal form renders as overlay with panel visible behind
+
+### Added
+
+- CapabilityChip component for config card capability display
+
 ## [0.4.1] - 2026-03-29
 
 ### Changed
