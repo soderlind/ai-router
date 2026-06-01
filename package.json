@@ -23,7 +23,7 @@
 		"@vitejs/plugin-react": "^4.3.0",
 		"@wordpress/scripts": "^30.0.0",
 		"jsdom": "^25.0.0",
-		"vitest": "^3.0.0"
+		"vitest": "^4.1.0"
 	},
 	"dependencies": {
 		"@wordpress/api-fetch": "^7.0.0",
