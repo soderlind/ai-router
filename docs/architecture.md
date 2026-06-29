@@ -53,32 +53,44 @@ sequenceDiagram
 |-------|------------|
 | **Admin UI** | `ConnectorsIntegration.php`, `connectors.js` |
 | **REST API** | `ConfigurationsController.php` |
-| **Core Logic** | `Router.php`, `CapabilityMap.php`, `ProviderDiscovery.php` |
-| **Data** | `ConfigurationRepository.php`, `Configuration.php` |
+| **Domain** | `ConfigurationService.php`, `Vocabulary.php` |
+| **Core Logic** | `Router.php`, `CapabilityMap.php`, `ConnectorSync.php`, `ProviderDiscovery.php` |
+| **Data** | `ConfigurationRepository.php`, `Configuration.php`, `RequestContext.php` |
 | **Storage** | `wp_options` |
 
 ### Directory Structure
 
-```
+```text
 ai-router/
 ├── src/
 │   ├── DTO/
-│   │   └── Configuration.php      # Immutable config data object
+│   │   ├── Configuration.php         # Immutable config data object
+│   │   └── RequestContext.php        # Per-request routing state (immutable)
 │   ├── Repository/
 │   │   ├── ConfigurationRepositoryInterface.php
 │   │   └── ConfigurationRepository.php  # CRUD for configs
+│   ├── Service/
+│   │   ├── ConfigurationService.php  # Domain logic (CRUD, validation)
+│   │   ├── ConfigurationNotFoundException.php
+│   │   └── ConfigurationValidationException.php
 │   ├── Admin/
 │   │   └── ConnectorsIntegration.php  # Settings → Connectors integration
 │   ├── Rest/
-│   │   └── ConfigurationsController.php  # REST API endpoints
+│   │   └── ConfigurationsController.php  # REST API (thin HTTP adapter)
+│   ├── Vocabulary.php             # Single source of truth for capabilities/providers
 │   ├── CapabilityMap.php          # Capability → Config mapping
+│   ├── CapabilityMapInterface.php
+│   ├── ConnectorSync.php          # WP connector option syncing
+│   ├── ConnectorSyncInterface.php
 │   ├── Router.php                 # Core routing logic
 │   └── ProviderDiscovery.php      # Discovers installed providers
 ├── src/js/
 │   └── connectors.js              # Connectors page UI
 └── tests/
-    ├── php/                       # PHPUnit + Brain Monkey tests
-    └── js/                        # Vitest + Testing Library tests
+    ├── php/                       # PHPUnit + Brain Monkey (116 tests)
+    │   ├── Unit/                  # Unit tests per module
+    │   └── Integration/           # Seam tests verifying module boundaries
+    └── js/                        # Vitest + Testing Library (6 tests)
 ```
 
 ### Data Flow
@@ -92,8 +104,6 @@ ai-router/
 
 The `Router::get_configuration_for_capability()` method implements the selection algorithm:
 
-
-
 ### Priority Order
 
 1. **Explicit Mapping** — If a capability is explicitly mapped to a configuration via the UI's "Capability Routing" section, use that configuration.
@@ -105,18 +115,55 @@ The `Router::get_configuration_for_capability()` method implements the selection
 ### Example Scenario
 
 **Configurations:**
+
 - GPT-4 Config (OpenAI) — default, supports `text_generation`, `chat_history`
 - Claude Config (Anthropic) — supports `text_generation`
 - DALL-E Config (OpenAI) — supports `image_generation`
 
 **Routing Results:**
+
 - `text_generation` → GPT-4 Config (default, supports it)
 - `image_generation` → DALL-E Config (only one supports it)
 - `chat_history` → GPT-4 Config (only one supports it)
 
 If Claude Config were set as default instead:
+
 - `text_generation` → Claude Config (default, supports it)
 - `chat_history` → GPT-4 Config (Claude doesn't support it, fallback)
+
+## Vocabulary Module
+
+`Vocabulary.php` is the **single source of truth** for capabilities and provider types:
+
+```php
+final class Vocabulary {
+    public const CAPABILITIES = [
+        'text_generation',
+        'chat_history',
+        'image_generation',
+        'embedding_generation',
+        'text_to_speech_conversion',
+        'speech_generation',
+        'music_generation',
+        'video_generation',
+    ];
+
+    public const PROVIDER_TYPES = [
+        'openai',
+        'anthropic',
+        'azure_openai',
+        'ollama',
+    ];
+
+    public static function capabilities(): array;
+    public static function get_capability_label(string $capability): string;
+    public static function is_valid_capability(string $capability): bool;
+    public static function normalize_provider_type(string $type): string;
+    public static function get_provider_id(string $type): string;
+}
+```
+
+All modules reference `Vocabulary` constants — no magic strings scattered through the codebase.
 
 ## Configuration Data Model
 
@@ -130,6 +177,61 @@ final readonly class Configuration implements JsonSerializable {
         public array $capabilities,  // text_generation, image_generation, etc.
         public bool $is_default,     // Default fallback flag
     ) {}
+}
+```
+
+## RequestContext DTO
+
+`RequestContext` is an **immutable value object** capturing per-request routing state:
+
+```php
+final readonly class RequestContext {
+    public function __construct(
+        public string $capability,
+        public Configuration $configuration,
+        public ?string $deployment_id = null,
+        public ?string $api_version = null,
+        public array $capabilities = [],
+    ) {}
+
+    public static function from_configuration(string $capability, Configuration $config): self;
+    public function has_azure_overrides(): bool;
+    public function get_provider_type(): string;
+    public function get_setting(string $key, mixed $default = null): mixed;
+}
+```
+
+The Router stores a single `?RequestContext` instead of multiple mutable fields, making the per-request state explicit and testable.
+
+## ConfigurationService
+
+Domain logic extracted from the REST controller:
+
+```php
+final class ConfigurationService {
+    public function list(): array;
+    public function get(string $id): Configuration;
+    public function create(array $data): Configuration;
+    public function update(string $id, array $data): Configuration;
+    public function delete(string $id): void;
+    public function get_default_id(): ?string;
+    public function set_default(string $id): void;
+    public function get_capability_map(): array;
+    public function update_capability_map(array $map): void;
+}
+```
+
+Throws `ConfigurationNotFoundException` and `ConfigurationValidationException` — the REST controller converts these to `WP_Error` responses.
+
+## ConnectorSync
+
+Handles WordPress connector option syncing (extracted from Repository):
+
+```php
+final class ConnectorSync implements ConnectorSyncInterface {
+    public function sync_connector_option(array $configs): void;
+    public function sync_request_options(RequestContext $context): void;
+    public function clear_sentinel(): void;
 }
 ```
 
@@ -168,7 +270,7 @@ The WordPress AI plugin uses `has_ai_credentials()` to check if valid credential
 
 **Problem:** Providers like Azure OpenAI unregister from `wp_get_connectors()` to provide custom UI, making them invisible to `has_ai_credentials()`. However, setting the OpenAI connector's API key option would make the AI Client SDK think OpenAI is configured, leading to wrong provider selection.
 
-**Solution:** AI Router registers itself as a connector with ID `ai_router`. The WP_Connector_Registry auto-generates the option name `connectors_ai_ai_router_api_key`. When AI Router has configurations, it sets this sentinel option to "1", making `has_ai_credentials()` return true without making any actual AI provider appear configured.
+**Solution:** AI Router registers itself as a connector with ID `ai_router`. The WP_Connector_Registry auto-generates the option name `connectors_ai_ai_router_api_key`. When AI Router has configurations, the `ConnectorSync` class sets this sentinel option to "1", making `has_ai_credentials()` return true without making any actual AI provider appear configured.
 
 ```php
 // In Router::register_connector()
@@ -179,12 +281,13 @@ $registry->register('ai_router', [
     'authentication' => ['method' => 'api_key'],
 ]);
 
-// In ConfigurationRepository::sync_connector_option()
+// In ConnectorSync::sync_connector_option()
 // Uses auto-generated option name: connectors_ai_ai_router_api_key
 update_option('connectors_ai_ai_router_api_key', '1');
 ```
 
 This ensures:
+
 1. `has_ai_credentials()` returns true (AI plugin features work)
 2. OpenAI provider doesn't appear configured (won't be incorrectly selected)
 3. Azure and other providers get their actual credentials synced separately

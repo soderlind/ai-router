@@ -47,8 +47,6 @@ WordPress 7.0's AI Client SDK only allows one configuration per provider type. A
 - PHP 8.3+
 - Underlying AI provider plugin(s) installed (e.g., `ai-provider-for-openai`)
 
-
-
 ## Installation
 
 ### From GitHub Release
@@ -83,7 +81,7 @@ The plugin includes a GitHub updater — updates are delivered automatically whe
 
 Map specific capabilities to specific configurations:
 
-```
+```text
 text_generation  → GPT-4 Config
 image_generation → DALL-E Config
 chat_history     → GPT-4 Config
@@ -93,7 +91,7 @@ Unmapped capabilities fall back to the default configuration.
 
 ## How It Works
 
-```
+```text
 Plugin/Theme → AI Request (text_generation)
                     ↓
               AI Router
@@ -134,22 +132,29 @@ npm run test:js:watch
 
 ### Project Structure
 
-```
+```text
 ai-router/
 ├── src/
-│   ├── Admin/              # Connectors page integration
-│   ├── DTO/                # Configuration data object
-│   ├── Repository/         # Configuration CRUD
-│   ├── Rest/               # REST API controller
-│   ├── js/                 # React admin UI
-│   ├── CapabilityMap.php   # Capability → Config mapping
-│   ├── Router.php          # Core routing logic
+│   ├── Admin/                    # Connectors page integration
+│   ├── DTO/
+│   │   ├── Configuration.php     # Immutable config data object
+│   │   └── RequestContext.php    # Per-request routing state
+│   ├── Repository/               # Configuration CRUD
+│   ├── Rest/                     # REST API controller
+│   ├── Service/
+│   │   ├── ConfigurationService.php  # Domain logic
+│   │   └── Exceptions
+│   ├── js/                       # React admin UI
+│   ├── CapabilityMap.php         # Capability → Config mapping
+│   ├── ConnectorSync.php         # WP connector option sync
+│   ├── Router.php                # Core routing logic
+│   ├── Vocabulary.php            # Canonical capabilities/providers
 │   └── ProviderDiscovery.php
 ├── tests/
-│   ├── php/                # PHPUnit tests
-│   └── js/                 # Vitest tests
+│   ├── php/                      # PHPUnit tests (116 tests)
+│   └── js/                       # Vitest tests (6 tests)
 └── docs/
-    └── architecture.md     # Architecture documentation
+    └── architecture.md           # Architecture documentation
 ```
 
 ## REST API
