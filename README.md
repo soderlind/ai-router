@@ -23,10 +23,16 @@ WordPress 7.0's AI Client SDK only allows one configuration per provider type. A
 
 ## Supported Providers
 
+AI Router works with **any AI provider** registered with the WordPress 7 AI Client SDK. Providers are discovered dynamically at runtime via `ProviderDiscovery`.
+
+**Tested providers:**
+
 - OpenAI
 - Azure OpenAI
 - Anthropic
 - Ollama
+
+Other providers (Google AI, Cohere, etc.) will work automatically when installed — no code changes required.
 
 ## Supported Capabilities
 
