@@ -110,7 +110,7 @@ The `Router::get_configuration_for_capability()` method implements the selection
 
 2. **Default Configuration** — If no explicit mapping exists, check if the default configuration supports the requested capability.
 
-3. **Best Effort** — If no default is set or it doesn't support the capability, use the first available configuration that supports it.
+3. **Best Effort** — If no default is set or it doesn't support the capability, find all configurations that support the capability and return the one with the lowest priority number (1 = highest priority, 100 = lowest).
 
 ### Example Scenario
 
@@ -176,6 +176,7 @@ final readonly class Configuration implements JsonSerializable {
         public array $settings,      // api_key, endpoint, model, etc.
         public array $capabilities,  // text_generation, image_generation, etc.
         public bool $is_default,     // Default fallback flag
+        public int $priority = 10,   // Routing priority (1-100, lower = higher)
     ) {}
 }
 ```
@@ -409,7 +410,6 @@ add_action('ai_router_routed', function($config, $capability, $prompt_builder) {
 
 ## Future Considerations
 
-- **Priority/Weight System** — Allow ordering when multiple configs support a capability
 - **Load Balancing** — Distribute requests across multiple providers
 - **Cost Tracking** — Monitor API usage and costs per provider
 - **Health Checks** — Automatic failover when a provider is unavailable
