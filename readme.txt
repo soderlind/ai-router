@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ Yes! That's the main purpose of AI Router. Create separate configurations for ea
 If a capability isn't explicitly mapped, AI Router will use the default configuration (if set and it supports that capability). If no default is available, it will try to find any configuration that supports the capability.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added: Priority-based routing and capability toggles
 
 = 1.0.1 =
 * Changed: Clarify that AI Router works with any WP7 AI provider via dynamic discovery

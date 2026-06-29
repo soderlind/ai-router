@@ -235,6 +235,59 @@ final class ConnectorSync implements ConnectorSyncInterface {
 }
 ```
 
+## Provider Discovery
+
+`ProviderDiscovery` discovers installed AI providers from the WordPress AI Client SDK and extracts their metadata, capabilities, and configuration fields.
+
+### Dynamic Settings Discovery
+
+Provider plugins (like Azure AI Foundry) register their settings with the WordPress `connectors` settings group using the pattern:
+
+```text
+connectors_ai_{provider_id}_{setting_key}
+```
+
+AI Router dynamically discovers these settings and exposes them as provider fields:
+
+```php
+// Example: Azure AI Foundry registers these settings
+connectors_ai_azure_ai_foundry_api_key      → api_key field (password)
+connectors_ai_azure_ai_foundry_endpoint     → endpoint field (text)
+```
+
+This allows any WP7 AI provider plugin to expose its configuration fields without changes to AI Router.
+
+### Field Type Detection
+
+| WordPress Setting Type | AI Router Field Type |
+|------------------------|----------------------|
+| `string` + key contains `api_key` | `password` |
+| `boolean` | `checkbox` |
+| `array` | `multiselect` |
+| `string` (default) | `text` |
+
+### Filtered Settings
+
+Internal and auto-detected settings are automatically filtered out:
+
+**Internal sentinels:**
+
+- `status_api_key` — used by providers for AI plugin compatibility
+- `status` — internal status indicators
+- `sentinel` — compatibility markers
+
+**Auto-detected by providers:**
+
+- `capabilities` — providers detect supported capabilities via API probing
+- `model_name` — providers detect model names automatically
+
+These are not user-facing configuration fields. Providers handle capability
+and model detection through their own settings UI.
+
+### Fallback Fields
+
+For providers that don't register settings with the `connectors` group (or when running without WordPress), AI Router falls back to hardcoded fields for known providers like Azure OpenAI and Ollama.
+
 ## Capability Map
 
 The `CapabilityMap` class manages explicit routing rules stored in `wp_options`:

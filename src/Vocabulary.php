@@ -192,7 +192,7 @@ final class Vocabulary {
 	 * @return string|null The canonical slug or null if unknown.
 	 */
 	public static function capability_enum_to_slug( CapabilityEnum $capability ): ?string {
-		$value = $capability->getValue();
+		$value = (string) $capability;
 		return self::CAPABILITY_VALUE_MAP[ $value ] ?? $value;
 	}
 

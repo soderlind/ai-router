@@ -37,6 +37,23 @@ class ConfigurationTest extends TestCase {
 		$this->assertSame( 'openai', $config->get_provider_type() );
 		$this->assertSame( 'sk-test123', $config->get_setting( 'api_key' ) );
 		$this->assertTrue( $config->is_default() );
+		$this->assertSame( 10, $config->get_priority() ); // Default priority.
+	}
+
+	/**
+	 * Test priority is stored and retrieved.
+	 */
+	public function test_priority_is_stored(): void {
+		$config = Configuration::from_array(
+			[
+				'id'            => 'test',
+				'name'          => 'Test',
+				'provider_type' => 'openai',
+				'priority'      => 5,
+			]
+		);
+
+		$this->assertSame( 5, $config->get_priority() );
 	}
 
 	/**
@@ -177,6 +194,7 @@ class ConfigurationTest extends TestCase {
 			'settings'      => [ 'api_key' => 'secret' ],
 			'capabilities'  => [ 'text_generation' ],
 			'is_default'    => false,
+			'priority'      => 10,
 		];
 
 		$config = Configuration::from_array( $data );

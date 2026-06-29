@@ -324,8 +324,14 @@ final class Router {
 			return $default;
 		}
 
-		// Last resort: find any config that supports the capability.
+		// Last resort: find configs that support the capability, sorted by priority.
 		$configs = $this->repository->get_by_capability( $capability );
+
+		// Sort by priority (lower = higher priority).
+		usort(
+			$configs,
+			static fn( Configuration $a, Configuration $b ) => $a->get_priority() <=> $b->get_priority()
+		);
 
 		foreach ( $configs as $fallback ) {
 			if ( $this->is_config_available( $fallback ) ) {
