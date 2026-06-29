@@ -9,10 +9,12 @@ declare(strict_types=1);
 
 namespace AIRouter\Rest;
 
-use AIRouter\CapabilityMap;
 use AIRouter\DTO\Configuration;
 use AIRouter\ProviderDiscovery;
-use AIRouter\Repository\ConfigurationRepository;
+use AIRouter\Service\ConfigurationNotFoundException;
+use AIRouter\Service\ConfigurationService;
+use AIRouter\Service\ConfigurationValidationException;
+use AIRouter\Vocabulary;
 use WP_Error;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -41,12 +43,10 @@ final class ConfigurationsController extends WP_REST_Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationRepository $repository     Configuration repository.
-	 * @param CapabilityMap           $capability_map Capability map.
+	 * @param ConfigurationService $service Configuration service.
 	 */
 	public function __construct(
-		private readonly ConfigurationRepository $repository,
-		private readonly CapabilityMap $capability_map,
+		private readonly ConfigurationService $service,
 	) {}
 
 	/**
@@ -207,11 +207,11 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_items( $request ): WP_REST_Response {
-		$configurations = $this->repository->get_all();
+		$configurations = $this->service->list();
 
 		$data = array_map(
 			fn( Configuration $c ) => $this->prepare_item_for_response( $c, $request )->get_data(),
-			array_values( $configurations )
+			$configurations
 		);
 
 		return rest_ensure_response( $data );
@@ -224,7 +224,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_item( $request ) {
-		$config = $this->repository->get( $request[ 'id' ] );
+		$config = $this->service->get( $request[ 'id' ] );
 
 		if ( null === $config ) {
 			return new WP_Error(
@@ -244,34 +244,23 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function create_item( $request ) {
-		$data = [
-			'id'            => wp_generate_uuid4(),
-			'name'          => sanitize_text_field( $request[ 'name' ] ),
-			'provider_type' => $this->normalize_provider_type( sanitize_key( $request[ 'provider_type' ] ) ),
-			'settings'      => $this->sanitize_settings( $request[ 'settings' ] ?? [] ),
-			'capabilities'  => $this->sanitize_capabilities( $request[ 'capabilities' ] ?? [] ),
-			'is_default'    => (bool) ( $request[ 'is_default' ] ?? false ),
-		];
+		try {
+			$config = $this->service->create( [
+				'name'          => sanitize_text_field( $request[ 'name' ] ),
+				'provider_type' => sanitize_key( $request[ 'provider_type' ] ),
+				'settings'      => $this->sanitize_settings( $request[ 'settings' ] ?? [] ),
+				'capabilities'  => array_map( 'sanitize_key', $request[ 'capabilities' ] ?? [] ),
+				'is_default'    => (bool) ( $request[ 'is_default' ] ?? false ),
+			] );
 
-		$config = Configuration::from_array( $data );
-		$errors = $config->validate();
-
-		if ( ! empty( $errors ) ) {
+			return $this->prepare_item_for_response( $config, $request );
+		} catch ( ConfigurationValidationException $e ) {
 			return new WP_Error(
 				'validation_error',
-				implode( ' ', $errors ),
+				$e->getMessage(),
 				[ 'status' => 400 ]
 			);
 		}
-
-		$this->repository->save( $config );
-
-		// If marked as default, update the default setting.
-		if ( $config->is_default() ) {
-			$this->repository->set_default_id( $config->get_id() );
-		}
-
-		return $this->prepare_item_for_response( $config, $request );
 	}
 
 	/**
@@ -281,61 +270,45 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( $request ) {
-		$existing = $this->repository->get( $request[ 'id' ] );
+		try {
+			$updates = [];
 
-		if ( null === $existing ) {
+			if ( isset( $request[ 'name' ] ) ) {
+				$updates[ 'name' ] = sanitize_text_field( $request[ 'name' ] );
+			}
+
+			if ( isset( $request[ 'provider_type' ] ) ) {
+				$updates[ 'provider_type' ] = sanitize_key( $request[ 'provider_type' ] );
+			}
+
+			if ( isset( $request[ 'settings' ] ) ) {
+				$updates[ 'settings' ] = $this->sanitize_settings( $request[ 'settings' ] );
+			}
+
+			if ( isset( $request[ 'capabilities' ] ) ) {
+				$updates[ 'capabilities' ] = array_map( 'sanitize_key', $request[ 'capabilities' ] );
+			}
+
+			if ( isset( $request[ 'is_default' ] ) ) {
+				$updates[ 'is_default' ] = (bool) $request[ 'is_default' ];
+			}
+
+			$config = $this->service->update( $request[ 'id' ], $updates );
+
+			return $this->prepare_item_for_response( $config, $request );
+		} catch ( ConfigurationNotFoundException $e ) {
 			return new WP_Error(
 				'not_found',
 				__( 'Configuration not found.', 'ai-router' ),
 				[ 'status' => 404 ]
 			);
-		}
-
-		$updates = [];
-
-		if ( isset( $request[ 'name' ] ) ) {
-			$updates[ 'name' ] = sanitize_text_field( $request[ 'name' ] );
-		}
-
-		if ( isset( $request[ 'provider_type' ] ) ) {
-			$updates[ 'provider_type' ] = $this->normalize_provider_type( sanitize_key( $request[ 'provider_type' ] ) );
-		}
-
-		if ( isset( $request[ 'settings' ] ) ) {
-			// Merge with existing settings, allowing partial updates.
-			$new_settings          = $this->sanitize_settings( $request[ 'settings' ] );
-			$updates[ 'settings' ] = array_merge( $existing->get_settings(), $new_settings );
-		}
-
-		if ( isset( $request[ 'capabilities' ] ) ) {
-			$updates[ 'capabilities' ] = $this->sanitize_capabilities( $request[ 'capabilities' ] );
-		}
-
-		if ( isset( $request[ 'is_default' ] ) ) {
-			$updates[ 'is_default' ] = (bool) $request[ 'is_default' ];
-		}
-
-		$config = $existing->with( $updates );
-		$errors = $config->validate();
-
-		if ( ! empty( $errors ) ) {
+		} catch ( ConfigurationValidationException $e ) {
 			return new WP_Error(
 				'validation_error',
-				implode( ' ', $errors ),
+				$e->getMessage(),
 				[ 'status' => 400 ]
 			);
 		}
-
-		$this->repository->save( $config );
-
-		// Handle default setting.
-		if ( $config->is_default() ) {
-			$this->repository->set_default_id( $config->get_id() );
-		} elseif ( $this->repository->get_default_id() === $config->get_id() ) {
-			$this->repository->set_default_id( '' );
-		}
-
-		return $this->prepare_item_for_response( $config, $request );
 	}
 
 	/**
@@ -345,22 +318,17 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function delete_item( $request ) {
-		$config = $this->repository->get( $request[ 'id' ] );
+		try {
+			$this->service->delete( $request[ 'id' ] );
 
-		if ( null === $config ) {
+			return rest_ensure_response( [ 'deleted' => true ] );
+		} catch ( ConfigurationNotFoundException $e ) {
 			return new WP_Error(
 				'not_found',
 				__( 'Configuration not found.', 'ai-router' ),
 				[ 'status' => 404 ]
 			);
 		}
-
-		// Remove capability mappings for this config.
-		$this->capability_map->remove_config( $config->get_id() );
-
-		$this->repository->delete( $config->get_id() );
-
-		return rest_ensure_response( [ 'deleted' => true ] );
 	}
 
 	/**
@@ -370,7 +338,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_capability_map( WP_REST_Request $request ): WP_REST_Response {
-		return rest_ensure_response( $this->capability_map->get_map() );
+		return rest_ensure_response( $this->service->get_capability_map() );
 	}
 
 	/**
@@ -393,17 +361,12 @@ final class ConfigurationsController extends WP_REST_Controller {
 		// Sanitize mappings.
 		$sanitized = [];
 		foreach ( $mappings as $capability => $config_id ) {
-			$capability = sanitize_key( $capability );
-			$config_id  = sanitize_text_field( $config_id );
-
-			if ( in_array( $capability, Configuration::CAPABILITIES, true ) ) {
-				$sanitized[ $capability ] = $config_id;
-			}
+			$sanitized[ sanitize_key( $capability ) ] = sanitize_text_field( $config_id );
 		}
 
-		$this->capability_map->set_bulk( $sanitized );
+		$result = $this->service->update_capability_map( $sanitized );
 
-		return rest_ensure_response( $this->capability_map->get_map() );
+		return rest_ensure_response( $result );
 	}
 
 	/**
@@ -413,7 +376,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_default( WP_REST_Request $request ): WP_REST_Response {
-		return rest_ensure_response( [ 'default_id' => $this->repository->get_default_id() ] );
+		return rest_ensure_response( [ 'default_id' => $this->service->get_default_id() ] );
 	}
 
 	/**
@@ -423,19 +386,19 @@ final class ConfigurationsController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function set_default( WP_REST_Request $request ) {
-		$config_id = sanitize_text_field( $request[ 'config_id' ] ?? '' );
+		try {
+			$config_id = sanitize_text_field( $request[ 'config_id' ] ?? '' );
 
-		if ( ! empty( $config_id ) && ! $this->repository->exists( $config_id ) ) {
+			$this->service->set_default( $config_id );
+
+			return rest_ensure_response( [ 'default_id' => $config_id ] );
+		} catch ( ConfigurationNotFoundException $e ) {
 			return new WP_Error(
 				'not_found',
 				__( 'Configuration not found.', 'ai-router' ),
 				[ 'status' => 404 ]
 			);
 		}
-
-		$this->repository->set_default_id( $config_id );
-
-		return rest_ensure_response( [ 'default_id' => $config_id ] );
 	}
 
 	/**
@@ -449,7 +412,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 		$data = $config->jsonSerialize();
 
 		// Add mapped capabilities info.
-		$data[ 'mapped_capabilities' ] = $this->capability_map->get_capabilities_for_config( $config->get_id() );
+		$data[ 'mapped_capabilities' ] = $this->service->get_capabilities_for_config( $config->get_id() );
 
 		return rest_ensure_response( $data );
 	}
@@ -504,23 +467,6 @@ final class ConfigurationsController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Normalize provider_type to canonical hyphenated form.
-	 *
-	 * Accepts both underscore (azure_openai) and hyphen (azure-openai) variants
-	 * and returns the canonical hyphenated slug used by Router and DTO.
-	 *
-	 * @param string $provider_type Raw provider type.
-	 * @return string Canonical provider type.
-	 */
-	private function normalize_provider_type( string $provider_type ): string {
-		$aliases = [
-			'azure_openai' => 'azure-openai',
-		];
-
-		return $aliases[ $provider_type ] ?? $provider_type;
-	}
-
-	/**
 	 * Sanitize settings array.
 	 *
 	 * @param array<string, mixed> $settings Raw settings.
@@ -547,21 +493,6 @@ final class ConfigurationsController extends WP_REST_Controller {
 		}
 
 		return $sanitized;
-	}
-
-	/**
-	 * Sanitize capabilities array.
-	 *
-	 * @param array<string> $capabilities Raw capabilities.
-	 * @return array<string>
-	 */
-	private function sanitize_capabilities( array $capabilities ): array {
-		return array_values(
-			array_filter(
-				array_map( 'sanitize_key', $capabilities ),
-				static fn( string $c ) => in_array( $c, Configuration::CAPABILITIES, true )
-			)
-		);
 	}
 
 	/**

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace AIRouter\DTO;
 
+use AIRouter\Vocabulary;
 use JsonSerializable;
 
 /**
@@ -18,25 +19,17 @@ final class Configuration implements JsonSerializable {
 
 	/**
 	 * Supported provider types.
+	 *
+	 * @deprecated Use Vocabulary::PROVIDER_TYPES instead.
 	 */
-	public const PROVIDER_TYPES = [
-		'openai'       => 'OpenAI',
-		'azure-openai' => 'Azure OpenAI',
-	];
+	public const PROVIDER_TYPES = Vocabulary::PROVIDER_TYPES;
 
 	/**
 	 * All available capabilities from WP 7 CapabilityEnum.
+	 *
+	 * @deprecated Use Vocabulary::CAPABILITIES instead.
 	 */
-	public const CAPABILITIES = [
-		'text_generation',
-		'chat_history',
-		'image_generation',
-		'embedding_generation',
-		'text_to_speech_conversion',
-		'speech_generation',
-		'music_generation',
-		'video_generation',
-	];
+	public const CAPABILITIES = Vocabulary::CAPABILITIES;
 
 	/**
 	 * Constructor.
@@ -256,7 +249,7 @@ final class Configuration implements JsonSerializable {
 
 		// Validate capabilities.
 		foreach ( $this->capabilities as $capability ) {
-			if ( ! in_array( $capability, self::CAPABILITIES, true ) ) {
+			if ( ! Vocabulary::is_valid_capability( $capability ) ) {
 				$errors[] = sprintf(
 					/* translators: %s: capability name */
 					__( 'Invalid capability: %s', 'ai-router' ),

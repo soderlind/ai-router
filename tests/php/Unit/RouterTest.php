@@ -254,10 +254,10 @@ class RouterTest extends TestCase {
 	}
 
 	/**
-	 * Test get_capability_label returns slug for unknown capability.
+	 * Test get_capability_label returns formatted label for unknown capability.
 	 */
-	public function test_get_capability_label_returns_slug_for_unknown(): void {
-		$this->assertSame( 'unknown_capability', Router::get_capability_label( 'unknown_capability' ) );
+	public function test_get_capability_label_returns_formatted_for_unknown(): void {
+		$this->assertSame( 'Unknown Capability', Router::get_capability_label( 'unknown_capability' ) );
 	}
 
 	/**

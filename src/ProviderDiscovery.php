@@ -215,29 +215,7 @@ class ProviderDiscovery {
 	 * @return string|null The slug or null if unknown.
 	 */
 	private function capability_to_slug( CapabilityEnum $capability ): ?string {
-		$value = $capability->getValue();
-
-		// Map SDK capability values to our slugs.
-		$map = [
-			'text_generation'           => 'text_generation',
-			'textGeneration'            => 'text_generation',
-			'chat_history'              => 'chat_history',
-			'chatHistory'               => 'chat_history',
-			'image_generation'          => 'image_generation',
-			'imageGeneration'           => 'image_generation',
-			'embedding_generation'      => 'embedding_generation',
-			'embeddingGeneration'       => 'embedding_generation',
-			'text_to_speech_conversion' => 'text_to_speech_conversion',
-			'textToSpeechConversion'    => 'text_to_speech_conversion',
-			'speech_generation'         => 'speech_generation',
-			'speechGeneration'          => 'speech_generation',
-			'music_generation'          => 'music_generation',
-			'musicGeneration'           => 'music_generation',
-			'video_generation'          => 'video_generation',
-			'videoGeneration'           => 'video_generation',
-		];
-
-		return $map[ $value ] ?? $value;
+		return Vocabulary::capability_enum_to_slug( $capability );
 	}
 
 	/**
@@ -308,16 +286,7 @@ class ProviderDiscovery {
 	 * @return list<array{slug: string, label: string}>
 	 */
 	public function get_all_capabilities(): array {
-		return [
-			[ 'slug' => 'text_generation', 'label' => __( 'Text Generation', 'ai-router' ) ],
-			[ 'slug' => 'chat_history', 'label' => __( 'Chat History', 'ai-router' ) ],
-			[ 'slug' => 'image_generation', 'label' => __( 'Image Generation', 'ai-router' ) ],
-			[ 'slug' => 'embedding_generation', 'label' => __( 'Embedding Generation', 'ai-router' ) ],
-			[ 'slug' => 'text_to_speech_conversion', 'label' => __( 'Text to Speech', 'ai-router' ) ],
-			[ 'slug' => 'speech_generation', 'label' => __( 'Speech Generation', 'ai-router' ) ],
-			[ 'slug' => 'music_generation', 'label' => __( 'Music Generation', 'ai-router' ) ],
-			[ 'slug' => 'video_generation', 'label' => __( 'Video Generation', 'ai-router' ) ],
-		];
+		return Vocabulary::capabilities_with_labels();
 	}
 
 	/**
@@ -327,11 +296,6 @@ class ProviderDiscovery {
 	 * @return string Capability label.
 	 */
 	public function get_capability_label( string $slug ): string {
-		foreach ( $this->get_all_capabilities() as $cap ) {
-			if ( $cap[ 'slug' ] === $slug ) {
-				return $cap[ 'label' ];
-			}
-		}
-		return ucwords( str_replace( '_', ' ', $slug ) );
+		return Vocabulary::get_capability_label( $slug );
 	}
 }

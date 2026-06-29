@@ -15,7 +15,7 @@ use AIRouter\Repository\ConfigurationRepositoryInterface;
 /**
  * Manages capability-to-configuration mappings.
  */
-class CapabilityMap {
+class CapabilityMap implements CapabilityMapInterface {
 
 	/**
 	 * Option key for storing capability map.
@@ -121,7 +121,7 @@ class CapabilityMap {
 		$map = $this->get_map();
 
 		foreach ( $mappings as $capability => $config_id ) {
-			if ( ! in_array( $capability, Configuration::CAPABILITIES, true ) ) {
+			if ( ! Vocabulary::is_valid_capability( $capability ) ) {
 				continue;
 			}
 
@@ -203,7 +203,7 @@ class CapabilityMap {
 		$map      = $this->get_map();
 		$unmapped = [];
 
-		foreach ( Configuration::CAPABILITIES as $capability ) {
+		foreach ( Vocabulary::CAPABILITIES as $capability ) {
 			if ( ! isset( $map[ $capability ] ) ) {
 				$unmapped[] = $capability;
 			}
