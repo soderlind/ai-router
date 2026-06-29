@@ -244,6 +244,67 @@ class RouterTest extends TestCase {
 	}
 
 	/**
+	 * Test get_configuration_for_capability sorts fallbacks by priority.
+	 */
+	public function test_get_configuration_for_capability_sorts_by_priority(): void {
+		$low_priority = Configuration::from_array(
+			[
+				'id'            => 'low-priority',
+				'name'          => 'Low Priority',
+				'provider_type' => 'openai',
+				'settings'      => [ 'api_key' => 'key' ],
+				'capabilities'  => [ 'text_generation' ],
+				'is_default'    => false,
+				'priority'      => 20,
+			]
+		);
+
+		$high_priority = Configuration::from_array(
+			[
+				'id'            => 'high-priority',
+				'name'          => 'High Priority',
+				'provider_type' => 'openai',
+				'settings'      => [ 'api_key' => 'key' ],
+				'capabilities'  => [ 'text_generation' ],
+				'is_default'    => false,
+				'priority'      => 5,
+			]
+		);
+
+		Filters\expectApplied( 'ai_router_get_configuration' )
+			->once()
+			->andReturn( null );
+
+		$this->capability_map
+			->shouldReceive( 'get_config_for_capability' )
+			->once()
+			->andReturn( null );
+
+		$this->repository
+			->shouldReceive( 'get_default' )
+			->once()
+			->andReturn( null );
+
+		// Return in wrong order to verify sorting works.
+		$this->repository
+			->shouldReceive( 'get_by_capability' )
+			->once()
+			->with( 'text_generation' )
+			->andReturn( [ 'low-priority' => $low_priority, 'high-priority' => $high_priority ] );
+
+		Filters\expectApplied( 'ai_router_fallback_config' )
+			->once()
+			->with( $high_priority, 'text_generation' )
+			->andReturn( $high_priority );
+
+		$router = new Router( $this->repository, $this->capability_map );
+		$result = $router->get_configuration_for_capability( 'text_generation' );
+
+		// Should return high_priority (priority=5) before low_priority (priority=20).
+		$this->assertSame( $high_priority, $result );
+	}
+
+	/**
 	 * Test get_capability_label returns human-readable label.
 	 */
 	public function test_get_capability_label(): void {

@@ -251,6 +251,7 @@ final class ConfigurationsController extends WP_REST_Controller {
 				'settings'      => $this->sanitize_settings( $request[ 'settings' ] ?? [] ),
 				'capabilities'  => array_map( 'sanitize_key', $request[ 'capabilities' ] ?? [] ),
 				'is_default'    => (bool) ( $request[ 'is_default' ] ?? false ),
+				'priority'      => (int) ( $request[ 'priority' ] ?? 10 ),
 			] );
 
 			return $this->prepare_item_for_response( $config, $request );
@@ -291,6 +292,10 @@ final class ConfigurationsController extends WP_REST_Controller {
 
 			if ( isset( $request[ 'is_default' ] ) ) {
 				$updates[ 'is_default' ] = (bool) $request[ 'is_default' ];
+			}
+
+			if ( isset( $request[ 'priority' ] ) ) {
+				$updates[ 'priority' ] = (int) $request[ 'priority' ];
 			}
 
 			$config = $this->service->update( $request[ 'id' ], $updates );
@@ -447,6 +452,12 @@ final class ConfigurationsController extends WP_REST_Controller {
 				'type'    => 'boolean',
 				'default' => false,
 			],
+			'priority'      => [
+				'type'    => 'integer',
+				'default' => 10,
+				'minimum' => 1,
+				'maximum' => 100,
+			],
 		];
 	}
 
@@ -531,6 +542,10 @@ final class ConfigurationsController extends WP_REST_Controller {
 				'is_default'    => [
 					'description' => __( 'Whether this is the default configuration.', 'ai-router' ),
 					'type'        => 'boolean',
+				],
+				'priority'      => [
+					'description' => __( 'Routing priority (1-100, lower = higher priority).', 'ai-router' ),
+					'type'        => 'integer',
 				],
 			],
 		];

@@ -219,13 +219,98 @@ class ProviderDiscovery {
 	}
 
 	/**
+	 * Discover provider settings from WordPress registered settings.
+	 *
+	 * Looks for settings registered under the 'connectors' group with the pattern
+	 * connectors_ai_{provider_id}_*.
+	 *
+	 * @param string $provider_id Provider ID (e.g. 'azure-ai-foundry').
+	 * @return list<array{key: string, label: string, type: string, description?: string}>
+	 */
+	private function discover_connector_settings( string $provider_id ): array {
+		if ( ! function_exists( 'get_registered_settings' ) ) {
+			return [];
+		}
+
+		$all_settings = get_registered_settings();
+		$fields       = [];
+
+		// Normalize provider ID: convert hyphens to underscores for option name matching.
+		$provider_slug = str_replace( '-', '_', $provider_id );
+		$prefix        = 'connectors_ai_' . $provider_slug . '_';
+
+		// Keys to skip:
+		// - Internal sentinels: status_api_key, status, sentinel
+		// - Auto-detected by providers: capabilities, model_name
+		$skip_keys = [ 'status_api_key', 'status', 'sentinel', 'capabilities', 'model_name' ];
+
+		foreach ( $all_settings as $option_name => $setting ) {
+			// Check if this setting belongs to our provider.
+			if ( strpos( $option_name, $prefix ) !== 0 ) {
+				continue;
+			}
+
+			// Check if it's in the connectors group.
+			if ( ! isset( $setting['group'] ) || 'connectors' !== $setting['group'] ) {
+				continue;
+			}
+
+			// Extract the field key (part after the prefix).
+			$key = substr( $option_name, strlen( $prefix ) );
+			if ( empty( $key ) ) {
+				continue;
+			}
+
+			// Skip internal sentinel/status settings.
+			if ( in_array( $key, $skip_keys, true ) ) {
+				continue;
+			}
+
+			// Determine field type based on setting type and key name.
+			$type = 'text';
+			if ( 'boolean' === ( $setting['type'] ?? '' ) ) {
+				$type = 'checkbox';
+			} elseif ( 'array' === ( $setting['type'] ?? '' ) ) {
+				$type = 'multiselect';
+			} elseif ( strpos( $key, 'api_key' ) !== false || strpos( $key, 'password' ) !== false ) {
+				$type = 'password';
+			}
+
+			$field = [
+				'key'   => $key,
+				'label' => $setting['label'] ?? ucwords( str_replace( '_', ' ', $key ) ),
+				'type'  => $type,
+			];
+
+			if ( ! empty( $setting['description'] ) ) {
+				$field['description'] = $setting['description'];
+			}
+
+			$fields[] = $field;
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * Get provider-specific configuration fields.
+	 *
+	 * First attempts dynamic discovery from WordPress registered settings,
+	 * then falls back to hardcoded fields for known providers.
 	 *
 	 * @param string $provider_id Provider ID.
 	 * @param object $metadata    Provider metadata.
 	 * @return list<array{key: string, label: string, type: string, placeholder?: string}>
 	 */
 	private function get_provider_fields( string $provider_id, object $metadata ): array {
+		// Try dynamic discovery first.
+		$discovered = $this->discover_connector_settings( $provider_id );
+		if ( ! empty( $discovered ) ) {
+			return $discovered;
+		}
+
+		// Fall back to hardcoded fields.
+
 		// Base field: API key (most providers need this).
 		$fields = [
 			[

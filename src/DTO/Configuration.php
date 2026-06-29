@@ -40,6 +40,7 @@ final class Configuration implements JsonSerializable {
 	 * @param array<string, mixed> $settings      Provider-specific settings (api_key, endpoint, deployment_id, etc.).
 	 * @param array<string>        $capabilities  List of capability slugs this config supports.
 	 * @param bool                 $is_default    Whether this is the default fallback config.
+	 * @param int                  $priority      Priority for routing (lower = higher priority).
 	 */
 	public function __construct(
 		private readonly string $id,
@@ -48,6 +49,7 @@ final class Configuration implements JsonSerializable {
 		private readonly array $settings = [],
 		private readonly array $capabilities = [],
 		private readonly bool $is_default = false,
+		private readonly int $priority = 10,
 	) {}
 
 	/**
@@ -64,6 +66,7 @@ final class Configuration implements JsonSerializable {
 			settings: $data[ 'settings' ] ?? [],
 			capabilities: $data[ 'capabilities' ] ?? [],
 			is_default: $data[ 'is_default' ] ?? false,
+			priority: (int) ( $data[ 'priority' ] ?? 10 ),
 		);
 	}
 
@@ -143,6 +146,15 @@ final class Configuration implements JsonSerializable {
 	}
 
 	/**
+	 * Get priority (lower = higher priority).
+	 *
+	 * @return int
+	 */
+	public function get_priority(): int {
+		return $this->priority;
+	}
+
+	/**
 	 * Create a copy with updated values.
 	 *
 	 * @param array<string, mixed> $updates Values to update.
@@ -156,6 +168,7 @@ final class Configuration implements JsonSerializable {
 			settings: $updates[ 'settings' ] ?? $this->settings,
 			capabilities: $updates[ 'capabilities' ] ?? $this->capabilities,
 			is_default: $updates[ 'is_default' ] ?? $this->is_default,
+			priority: $updates[ 'priority' ] ?? $this->priority,
 		);
 	}
 
@@ -172,6 +185,7 @@ final class Configuration implements JsonSerializable {
 			'settings'      => $this->settings,
 			'capabilities'  => $this->capabilities,
 			'is_default'    => $this->is_default,
+			'priority'      => $this->priority,
 		];
 	}
 

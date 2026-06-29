@@ -460,6 +460,7 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 			settings: isEditing ? settings : {},
 			capabilities: caps,
 			is_default: config?.is_default || false,
+			priority: config?.priority ?? 10,
 		};
 	} );
 
@@ -613,7 +614,7 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 					__next40pxDefaultSize: true,
 				} );
 			} ),
-			// Capabilities (read-only, derived from provider).
+			// Capabilities (selectable checkboxes).
 			el(
 				'fieldset',
 				null,
@@ -626,7 +627,7 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 							marginBottom: TOKENS.space.xs,
 						},
 					},
-					__( 'Supported Capabilities', 'ai-router' )
+					__( 'Enabled Capabilities', 'ai-router' )
 				),
 				el(
 					'p',
@@ -638,32 +639,17 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 						},
 					},
 					__(
-						'Determined by provider. Assign to this configuration in Capability Routing.',
+						'Select which capabilities this configuration should handle.',
 						'ai-router'
 					)
 				),
-				formData.capabilities.length > 0
-					? el(
-							'div',
-							{
-								style: {
-									display: 'flex',
-									flexWrap: 'wrap',
-									gap: '6px',
-								},
-							},
-							...formData.capabilities.map( ( slug ) => {
-								const cap = capabilities.find(
-									( c ) => c.slug === slug
-								);
-								return el( StatusChip, {
-									key: slug,
-									label: cap?.label || slug,
-									variant: 'empty',
-								} );
-							} )
-					  )
-					: el(
+				( () => {
+					const providerCaps = getProviderCapabilities(
+						formData.provider_type,
+						providers
+					);
+					if ( providerCaps.length === 0 ) {
+						return el(
 							'p',
 							{
 								style: {
@@ -675,8 +661,60 @@ function ConfigurationForm( { config, providers, capabilities, onSave, onCancel 
 								'No capabilities for this provider.',
 								'ai-router'
 							)
-					  )
+						);
+					}
+					return el(
+						'div',
+						{
+							style: {
+								display: 'flex',
+								flexDirection: 'column',
+								gap: '4px',
+							},
+						},
+						...providerCaps.map( ( slug ) => {
+							const cap = capabilities.find(
+								( c ) => c.slug === slug
+							);
+							const isEnabled =
+								formData.capabilities.includes( slug );
+							return el( CheckboxControl, {
+								key: slug,
+								label: cap?.label || slug,
+								checked: isEnabled,
+								onChange: ( checked ) => {
+									setFormData( ( p ) => ( {
+										...p,
+										capabilities: checked
+											? [ ...p.capabilities, slug ]
+											: p.capabilities.filter(
+													( c ) => c !== slug
+											  ),
+									} ) );
+								},
+								__nextHasNoMarginBottom: true,
+							} );
+						} )
+					);
+				} )()
 			),
+			el( TextControl, {
+				label: __( 'Priority', 'ai-router' ),
+				help: __(
+					'Lower values = higher priority (1-100). When multiple configs support a capability, the lowest priority is used first.',
+					'ai-router'
+				),
+				type: 'number',
+				min: 1,
+				max: 100,
+				value: String( formData.priority ),
+				onChange: ( v ) =>
+					setFormData( ( p ) => ( {
+						...p,
+						priority: Math.max( 1, Math.min( 100, parseInt( v, 10 ) || 10 ) ),
+					} ) ),
+				__nextHasNoMarginBottom: true,
+			} ),
 			el( CheckboxControl, {
 				label: __( 'Set as default fallback', 'ai-router' ),
 				help: __(
@@ -945,7 +983,8 @@ function CapabilityRouting( {
 			{
 				justify: 'space-between',
 				alignment: 'center',
-				style: { marginBottom: TOKENS.space.sm },
+				wrap: true,
+				style: { marginBottom: TOKENS.space.sm, gap: TOKENS.space.sm },
 			},
 			el(
 				HStack,
@@ -970,15 +1009,22 @@ function CapabilityRouting( {
 			),
 			changed &&
 				el(
-					Button,
+					'div',
 					{
-						variant: 'primary',
-						size: 'compact',
-						onClick: handleSave,
-						isBusy: saving,
-						disabled: saving,
+						style: { flexGrow: 1, display: 'flex', justifyContent: 'flex-end' },
 					},
-					__( 'Save Routing', 'ai-router' )
+					el(
+						Button,
+						{
+							variant: 'primary',
+							size: 'compact',
+							onClick: handleSave,
+							isBusy: saving,
+							disabled: saving,
+							style: { flexShrink: 0, whiteSpace: 'nowrap' },
+						},
+						__( 'Save Routing', 'ai-router' )
+					)
 				)
 		),
 		el(
