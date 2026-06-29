@@ -5,6 +5,18 @@ All notable changes to AI Router will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-30
+
+### Changed
+
+- Extract deep modules for better testability and AI-navigability
+  - Vocabulary module as single source of truth for capabilities/providers
+  - RequestContext immutable DTO replaces mutable Router fields
+  - ConfigurationService for domain logic (CRUD, validation, capability mapping)
+  - ConnectorSync for WordPress connector option syncing
+  - Interfaces (CapabilityMapInterface, ConnectorSyncInterface) for testability
+  - Integration seam tests verifying module boundaries
+
 ## [0.4.3] - 2026-03-29
 
 ### Changed
