@@ -4,7 +4,7 @@ Tags: ai, openai, azure, routing
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.4.3
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -61,6 +61,15 @@ Yes! That's the main purpose of AI Router. Create separate configurations for ea
 If a capability isn't explicitly mapped, AI Router will use the default configuration (if set and it supports that capability). If no default is available, it will try to find any configuration that supports the capability.
 
 == Changelog ==
+
+= 1.0.0 =
+* Changed: Extract deep modules for better testability and AI-navigability
+* Changed: Vocabulary module as single source of truth for capabilities/providers
+* Changed: RequestContext immutable DTO replaces mutable Router fields
+* Changed: ConfigurationService for domain logic (CRUD, validation, capability mapping)
+* Changed: ConnectorSync for WordPress connector option syncing
+* Added: Interfaces (CapabilityMapInterface, ConnectorSyncInterface) for testability
+* Added: Integration seam tests verifying module boundaries
 
 = 0.4.3 =
 * Changed: Config cards use inline SVG icons for edit/delete (no dashicon font dependency)

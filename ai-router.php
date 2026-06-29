@@ -5,7 +5,7 @@
  * Description: Route AI requests to different provider configurations based on capability. Allows multiple configurations of the same AI provider with different LLMs.
  * Requires at least: 7.0
  * Requires PHP: 8.3
- * Version: 0.4.3
+ * Version: 1.0.0
  * Author: Per Søderlind
  * Author URI: https://soderlind.no
  * License: GPL-2.0-or-later
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'AI_ROUTER_VERSION', '0.4.2' );
+define( 'AI_ROUTER_VERSION', '1.0.0' );
 define( 'AI_ROUTER_FILE', __FILE__ );
 define( 'AI_ROUTER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AI_ROUTER_DIR', AI_ROUTER_PATH ); // Alias for backward compat.
@@ -67,6 +67,7 @@ function bootstrap(): void {
 	$repository     = new Repository\ConfigurationRepository();
 	$capability_map = new CapabilityMap( $repository );
 	$router         = new Router( $repository, $capability_map );
+	$service        = new Service\ConfigurationService( $repository, $capability_map );
 
 	// Register admin integration with WP 7 Connectors page.
 	if ( is_admin() ) {
@@ -77,8 +78,8 @@ function bootstrap(): void {
 	// Register REST API.
 	add_action(
 		'rest_api_init',
-		static function () use ($repository, $capability_map): void {
-			$controller = new Rest\ConfigurationsController( $repository, $capability_map );
+		static function () use ($service): void {
+			$controller = new Rest\ConfigurationsController( $service );
 			$controller->register_routes();
 		}
 	);

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace AIRouter;
 
 use AIRouter\DTO\Configuration;
+use AIRouter\DTO\RequestContext;
 use AIRouter\Repository\ConfigurationRepositoryInterface;
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
@@ -22,40 +23,20 @@ final class Router {
 
 	/**
 	 * Provider class map.
+	 *
+	 * @deprecated Use Vocabulary::PROVIDER_CLASSES instead.
 	 */
-	private const PROVIDER_CLASSES = [
-		'openai'       => 'WordPress\\OpenAiAiProvider\\Provider\\OpenAiProvider',
-		'azure-openai' => 'WordPress\\AzureOpenAiAiProvider\\Provider\\AzureOpenAiProvider',
-		'ollama'       => 'Fueled\\AiProviderForOllama\\Provider\\OllamaProvider',
-	];
+	private const PROVIDER_CLASSES = Vocabulary::PROVIDER_CLASSES;
 
 	/**
-	 * Current capability being processed.
+	 * Active request context.
 	 *
-	 * @var string|null
-	 */
-	private ?string $current_capability = null;
-
-	/**
-	 * Active deployment ID override for the current request.
+	 * Holds immutable per-request state during AI generation.
+	 * Set at the start of a request, cleared at the end.
 	 *
-	 * @var string|null
+	 * @var RequestContext|null
 	 */
-	private ?string $active_deployment_id = null;
-
-	/**
-	 * Active API version override for the current request.
-	 *
-	 * @var string|null
-	 */
-	private ?string $active_api_version = null;
-
-	/**
-	 * Active capabilities override for the current request.
-	 *
-	 * @var array<string>|null
-	 */
-	private ?array $active_capabilities = null;
+	private ?RequestContext $active_context = null;
 
 	/**
 	 * Constructor.
@@ -67,6 +48,18 @@ final class Router {
 		private readonly ConfigurationRepositoryInterface $repository,
 		private readonly CapabilityMap $capability_map,
 	) {}
+
+	/**
+	 * Get the active request context.
+	 *
+	 * Useful for testing and introspection. Returns null when no AI
+	 * request is being processed.
+	 *
+	 * @return RequestContext|null
+	 */
+	public function get_active_context(): ?RequestContext {
+		return $this->active_context;
+	}
 
 	/**
 	 * Initialize router hooks.
@@ -175,8 +168,8 @@ final class Router {
 	 * Hook called before AI generation.
 	 *
 	 * Receives a BeforeGenerateResultEvent from the AI Client SDK.
-	 * Syncs the matched configuration's settings to connector options
-	 * so the underlying provider uses the correct deployment/endpoint.
+	 * Creates a RequestContext and sets up authentication for the
+	 * matched configuration.
 	 *
 	 * @param object $event The BeforeGenerateResultEvent instance.
 	 * @return void
@@ -196,22 +189,14 @@ final class Router {
 			return;
 		}
 
-		$this->current_capability = $capability;
-
 		$config = $this->get_configuration_for_capability( $capability );
 
 		if ( null === $config ) {
 			return;
 		}
 
-		// Set per-request overrides for deployment_id and api_version.
-		// The pre_option filters will return these values when the Azure
-		// provider reads the options during model execution.
-		if ( in_array( $config->get_provider_type(), [ 'azure-openai', 'azure_openai' ], true ) ) {
-			$this->active_deployment_id = $config->get_setting( 'deployment_id', '' );
-			$this->active_api_version   = $config->get_setting( 'api_version', '' );
-			$this->active_capabilities  = $config->get_capabilities();
-		}
+		// Create immutable request context.
+		$this->active_context = RequestContext::from_configuration( $capability, $config );
 
 		// Re-set provider auth for this request's API key.
 		$provider_id = $this->get_provider_id_for_config( $config );
@@ -249,31 +234,27 @@ final class Router {
 	/**
 	 * Hook called after AI generation completes.
 	 *
-	 * Clears per-request overrides so subsequent requests get fresh routing.
+	 * Clears the active request context so subsequent requests get fresh routing.
 	 *
 	 * @param object $event The AfterGenerateResultEvent instance.
 	 * @return void
 	 */
 	public function after_generate( object $event ): void {
-		$this->active_deployment_id = null;
-		$this->active_api_version   = null;
-		$this->active_capabilities  = null;
-		$this->current_capability   = null;
+		$this->active_context = null;
 	}
 
 	/**
 	 * Filter for pre_option_connectors_ai_azure_openai_deployment_id.
 	 *
-	 * When an override is active (during model execution), returns the
-	 * matched config's deployment_id. Otherwise returns false to let
-	 * WordPress read the real option value.
+	 * When a request context is active, returns the deployment_id from it.
+	 * Otherwise returns the original value to let WordPress read the real option.
 	 *
 	 * @param mixed $value Pre-option value (false = use real option).
 	 * @return mixed
 	 */
 	public function filter_deployment_id( $value ) {
-		if ( null !== $this->active_deployment_id ) {
-			return $this->active_deployment_id;
+		if ( null !== $this->active_context && null !== $this->active_context->deployment_id ) {
+			return $this->active_context->deployment_id;
 		}
 		return $value;
 	}
@@ -281,16 +262,15 @@ final class Router {
 	/**
 	 * Filter for pre_option_connectors_ai_azure_openai_api_version.
 	 *
-	 * When an override is active (during model execution), returns the
-	 * matched config's api_version. Otherwise returns false to let
-	 * WordPress read the real option value.
+	 * When a request context is active, returns the api_version from it.
+	 * Otherwise returns the original value to let WordPress read the real option.
 	 *
 	 * @param mixed $value Pre-option value (false = use real option).
 	 * @return mixed
 	 */
 	public function filter_api_version( $value ) {
-		if ( null !== $this->active_api_version ) {
-			return $this->active_api_version;
+		if ( null !== $this->active_context && null !== $this->active_context->api_version ) {
+			return $this->active_context->api_version;
 		}
 		return $value;
 	}
@@ -298,15 +278,15 @@ final class Router {
 	/**
 	 * Filter for pre_option_connectors_ai_azure_openai_capabilities.
 	 *
-	 * When an override is active, returns the matched config's capabilities
+	 * When a request context is active, returns the capabilities from it
 	 * so the Azure metadata directory creates a model with the correct capability.
 	 *
 	 * @param mixed $value Pre-option value (false = use real option).
 	 * @return mixed
 	 */
 	public function filter_capabilities( $value ) {
-		if ( null !== $this->active_capabilities ) {
-			return $this->active_capabilities;
+		if ( null !== $this->active_context && ! empty( $this->active_context->capabilities ) ) {
+			return $this->active_context->capabilities;
 		}
 		return $value;
 	}
@@ -447,13 +427,7 @@ final class Router {
 	 * @return string|null
 	 */
 	private function get_provider_id( string $provider_type ): ?string {
-		$map = [
-			'openai'       => 'openai',
-			'azure-openai' => 'azure_openai',
-			'ollama'       => 'ollama',
-		];
-
-		return $map[ $provider_type ] ?? null;
+		return Vocabulary::get_provider_id( $provider_type );
 	}
 
 	/**
@@ -507,24 +481,7 @@ final class Router {
 	 * @return CapabilityEnum|null
 	 */
 	public static function string_to_capability_enum( string $capability ): ?CapabilityEnum {
-		$map = [
-			'text_generation'           => 'textGeneration',
-			'chat_history'              => 'chatHistory',
-			'image_generation'          => 'imageGeneration',
-			'embedding_generation'      => 'embeddingGeneration',
-			'text_to_speech_conversion' => 'textToSpeechConversion',
-			'speech_generation'         => 'speechGeneration',
-			'music_generation'          => 'musicGeneration',
-			'video_generation'          => 'videoGeneration',
-		];
-
-		$method = $map[ $capability ] ?? null;
-
-		if ( $method && method_exists( CapabilityEnum::class, $method ) ) {
-			return CapabilityEnum::$method();
-		}
-
-		return null;
+		return Vocabulary::slug_to_capability_enum( $capability );
 	}
 
 	/**
@@ -534,17 +491,6 @@ final class Router {
 	 * @return string
 	 */
 	public static function get_capability_label( string $capability ): string {
-		$labels = [
-			'text_generation'           => __( 'Text Generation', 'ai-router' ),
-			'chat_history'              => __( 'Chat History', 'ai-router' ),
-			'image_generation'          => __( 'Image Generation', 'ai-router' ),
-			'embedding_generation'      => __( 'Embedding Generation', 'ai-router' ),
-			'text_to_speech_conversion' => __( 'Text to Speech', 'ai-router' ),
-			'speech_generation'         => __( 'Speech Generation', 'ai-router' ),
-			'music_generation'          => __( 'Music Generation', 'ai-router' ),
-			'video_generation'          => __( 'Video Generation', 'ai-router' ),
-		];
-
-		return $labels[ $capability ] ?? $capability;
+		return Vocabulary::get_capability_label( $capability );
 	}
 }
