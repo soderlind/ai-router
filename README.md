@@ -34,19 +34,6 @@ AI Router works with **any AI provider** registered with the WordPress 7 AI Clie
 
 Other providers (Google AI, Cohere, etc.) will work automatically when installed — no code changes required.
 
-## Supported Capabilities
-
-| Capability | Description |
-|------------|-------------|
-| `text_generation` | GPT models, Claude, etc. |
-| `chat_history` | Conversation context |
-| `image_generation` | DALL-E, Stable Diffusion |
-| `embedding_generation` | Vector embeddings |
-| `text_to_speech` | Audio synthesis |
-| `speech_generation` | Voice generation |
-| `music_generation` | Music synthesis |
-| `video_generation` | Video synthesis |
-
 ## Requirements
 
 - WordPress 7.0+
@@ -95,24 +82,7 @@ chat_history     → GPT-4 Config
 
 Unmapped capabilities fall back to the default configuration.
 
-## How It Works
-
-```text
-Plugin/Theme → AI Request (text_generation)
-                    ↓
-              AI Router
-                    ↓
-         ┌─────────────────────┐
-         │ 1. Explicit mapping │ → Use mapped config
-         │ 2. Default supports │ → Use default config
-         │ 3. Any supporting   │ → Use first match
-         │ 4. None found       │ → Use WP default
-         └─────────────────────┘
-                    ↓
-           AI Provider (OpenAI, Azure, etc.)
-```
-
-See [docs/](docs/README.md) for detailed architecture and routing logic.
+See [docs/](docs/README.md) for detailed routing logic and architecture.
 
 ## Development
 
@@ -135,50 +105,6 @@ composer test
 npm run test:js
 npm run test:js:watch
 ```
-
-### Project Structure
-
-```text
-ai-router/
-├── src/
-│   ├── Admin/                    # Connectors page integration
-│   ├── DTO/
-│   │   ├── Configuration.php     # Immutable config data object
-│   │   └── RequestContext.php    # Per-request routing state
-│   ├── Repository/               # Configuration CRUD
-│   ├── Rest/                     # REST API controller
-│   ├── Service/
-│   │   ├── ConfigurationService.php  # Domain logic
-│   │   └── Exceptions
-│   ├── js/                       # React admin UI
-│   ├── CapabilityMap.php         # Capability → Config mapping
-│   ├── ConnectorSync.php         # WP connector option sync
-│   ├── Router.php                # Core routing logic
-│   ├── Vocabulary.php            # Canonical capabilities/providers
-│   └── ProviderDiscovery.php
-├── tests/
-│   ├── php/                      # PHPUnit tests (116 tests)
-│   └── js/                       # Vitest tests (6 tests)
-└── docs/
-    ├── README.md                 # Documentation index
-    ├── routing.md                # Routing logic and priority
-    ├── data-model.md             # Configuration DTOs
-    ├── provider-discovery.md     # Provider detection
-    ├── wordpress-integration.md  # Hooks, REST API
-    └── extensibility.md          # Filters, actions, security
-```
-
-## REST API
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/ai-router/v1/configurations` | GET | List all configurations |
-| `/ai-router/v1/configurations` | POST | Create configuration |
-| `/ai-router/v1/configurations/{id}` | GET | Get single configuration |
-| `/ai-router/v1/configurations/{id}` | PUT | Update configuration |
-| `/ai-router/v1/configurations/{id}` | DELETE | Delete configuration |
-| `/ai-router/v1/capability-map` | GET | Get capability mappings |
-| `/ai-router/v1/capability-map` | POST | Update capability mappings |
 
 ## Changelog
 
