@@ -112,7 +112,7 @@ Plugin/Theme → AI Request (text_generation)
            AI Provider (OpenAI, Azure, etc.)
 ```
 
-See [docs/architecture.md](docs/architecture.md) for detailed routing logic.
+See [docs/](docs/README.md) for detailed architecture and routing logic.
 
 ## Development
 
@@ -160,7 +160,12 @@ ai-router/
 │   ├── php/                      # PHPUnit tests (116 tests)
 │   └── js/                       # Vitest tests (6 tests)
 └── docs/
-    └── architecture.md           # Architecture documentation
+    ├── README.md                 # Documentation index
+    ├── routing.md                # Routing logic and priority
+    ├── data-model.md             # Configuration DTOs
+    ├── provider-discovery.md     # Provider detection
+    ├── wordpress-integration.md  # Hooks, REST API
+    └── extensibility.md          # Filters, actions, security
 ```
 
 ## REST API
